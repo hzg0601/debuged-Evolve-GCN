@@ -1,4 +1,21 @@
+
 EvolveGCN
+EvolveGCN存在两种版本：H版本和O版本。
+其中H版本使用GRU为时间序列模型，
+GRU模型以节点嵌入向量和模型参数为输入，以嵌入向量和模型参数为输出。
+相当于以节点嵌入向量为输出，以模型参数为隐状态。
+H版本适用于节点具有有效特征的场景。
+
+H版本有两种实现：
+第一种是将向量上的GRU扩展到矩阵上；
+第二种是将将所有节点嵌入向量汇总为k个代表性向量，
+以保持输入的列数量匹配隐状态的数量
+
+O版本以LSTM为时间序列模型，
+LSTM以模型参数为输入，以模型参数为输出，不再使用节点嵌入向量。
+O版本适用于节点没有有效特征，或结构特征起决定性作用的场景。
+
+**官方实现对H和O版本的实现都是以GRU为基础，并没有按照论文实现**
 =====
 
 This repository contains the code for [EvolveGCN: Evolving Graph Convolutional Networks for Dynamic Graphs](https://arxiv.org/abs/1902.10191), published in AAAI 2020.

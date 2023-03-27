@@ -114,7 +114,8 @@ def get_edge_labels(edges,time):
 
     return {'idx': idx, 'vals': vals}
 
-
+# 指定一个最大节点数，每个邻接矩阵由于只能包含一部分节点，因此需要对不包含的节点进行掩码，
+# 指定该邻接矩阵不包含的索引的值为负无穷大。
 def get_node_mask(cur_adj,num_nodes):
     mask = torch.zeros(num_nodes) - float("Inf")
     non_zero = cur_adj['idx'].unique()
@@ -122,6 +123,7 @@ def get_node_mask(cur_adj,num_nodes):
     mask[non_zero] = 0
     
     return mask
+# 原设计目标应是按时间进行加权，但最终放弃了该方案
 
 def get_static_sp_adj(edges,weighted):
     idx = edges['idx']
@@ -130,7 +132,7 @@ def get_static_sp_adj(edges,weighted):
 
     #idx = edges['idx'][subset][:,[ECOLS.source, ECOLS.target]]  
     if weighted:
-        vals = edges['vals'][subset]
+        vals = edges['vals']# * [subset]
     else:
         vals = torch.ones(idx.size(0),dtype = torch.long)
 

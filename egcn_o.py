@@ -3,7 +3,9 @@ import torch
 from torch.nn.parameter import Parameter
 import torch.nn as nn
 import math
-
+"""
+脚本的时间序列模型仍以GRU为基础，并非LSTM
+"""
 
 class EGCN(torch.nn.Module):
     def __init__(self, args, activation, device='cpu', skipfeats=False):
@@ -73,7 +75,7 @@ class GRCU(torch.nn.Module):
             out_seq.append(node_embs)
 
         return out_seq
-
+# GRU的实现
 class mat_GRU_cell(torch.nn.Module):
     def __init__(self,args):
         super().__init__()
@@ -92,7 +94,7 @@ class mat_GRU_cell(torch.nn.Module):
         
         self.choose_topk = TopK(feats = args.rows,
                                 k = args.cols)
-
+    #! 官方的实现以GRU为基础模型，并将GRU的隐状态与输出合二为一
     def forward(self,prev_Q):#,prev_Z,mask):
         # z_topk = self.choose_topk(prev_Z,mask)
         z_topk = prev_Q
