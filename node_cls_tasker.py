@@ -1,18 +1,20 @@
 import taskers_utils as tu
 import torch
 import utils as u
-
+"""
+节点分类任务
+"""
 class Node_Cls_Tasker():
 	def __init__(self,args,dataset):
 		self.data = dataset
 
-		self.max_time = dataset.max_time
+		self.max_time = dataset.max_time #数据集的固有属性，应表示最大的时间区间
 
 		self.args = args
 
-		self.num_classes = 2
+		self.num_classes = 2 #? 去除了unknown类
 
-		self.feats_per_node = dataset.feats_per_node
+		self.feats_per_node = dataset.feats_per_node #
 
 		self.nodes_labels_times = dataset.nodes_labels_times
 
@@ -25,6 +27,7 @@ class Node_Cls_Tasker():
 
 	def build_get_node_feats(self,args,dataset):
 		if args.use_2_hot_node_feats:
+      	#  
 			max_deg_out, max_deg_in = tu.get_max_degs(args,dataset,all_window = True)
 			self.feats_per_node = max_deg_out + max_deg_in
 			def get_node_feats(i,adj):

@@ -3,35 +3,44 @@ import utils as u
 import numpy as np
 import time
 
+# edgelist中各列的位置
 ECOLS = u.Namespace({'source': 0,
                      'target': 1,
                      'time': 2,
                      'label':3}) #--> added for edge_cls
 
-# def get_2_hot_deg_feats(adj,max_deg_out,max_deg_in,num_nodes):
-#     #For now it'll just return a 2-hot vector
-#     adj['vals'] = torch.ones(adj['idx'].size(0))
-#     degs_out, degs_in = get_degree_vects(adj,num_nodes)
+def get_2_hot_deg_feats(adj,max_deg_out,max_deg_in,num_nodes):
+    """
+    以边的出度和入度的one-hot编码向量为节点的度特征
+    """
+    #For now it'll just return a 2-hot vector
+    #? 边的权重为1
+    adj['vals'] = torch.ones(adj['idx'].size(0))
+    degs_out, degs_in = get_degree_vects(adj,num_nodes)
+    # idx: 第一列为从0开始的index，第二列为每个节点的度
+    # vals: 1向量
+    degs_out = {'idx': torch.cat([torch.arange(num_nodes).view(-1,1),
+                                  degs_out.view(-1,1)],dim=1),
+                'vals': torch.ones(num_nodes)}
+    #* 构造一个num_nodes\times max_deg_out的矩阵，以出度的数目为行中1的位置，即one-hot编码度
+    degs_out = u.make_sparse_tensor(degs_out,'long',[num_nodes,max_deg_out])
     
-#     degs_out = {'idx': torch.cat([torch.arange(num_nodes).view(-1,1),
-#                                   degs_out.view(-1,1)],dim=1),
-#                 'vals': torch.ones(num_nodes)}
-    
-#     # print ('XXX degs_out',degs_out['idx'].size(),degs_out['vals'].size())
-#     degs_out = u.make_sparse_tensor(degs_out,'long',[num_nodes,max_deg_out])
+    #* 构造一个num_nodes\times max_deg_in的矩阵，以入度的数目为行中1的位置
+    degs_in = {'idx': torch.cat([torch.arange(num_nodes).view(-1,1),
+                                  degs_in.view(-1,1)],dim=1),
+                'vals': torch.ones(num_nodes)}
+    degs_in = u.make_sparse_tensor(degs_in,'long',[num_nodes,max_deg_in])
+    # 合并出度向量和入度向量作为节点的特征，如
+    hot_2 = torch.cat([degs_out,degs_in],dim = 1)
+    hot_2 = {'idx': hot_2._indices().t(),
+             'vals': hot_2._values()}
 
-#     degs_in = {'idx': torch.cat([torch.arange(num_nodes).view(-1,1),
-#                                   degs_in.view(-1,1)],dim=1),
-#                 'vals': torch.ones(num_nodes)}
-#     degs_in = u.make_sparse_tensor(degs_in,'long',[num_nodes,max_deg_in])
-
-#     hot_2 = torch.cat([degs_out,degs_in],dim = 1)
-#     hot_2 = {'idx': hot_2._indices().t(),
-#              'vals': hot_2._values()}
-
-#     return hot_2
+    return hot_2
 
 def get_1_hot_deg_feats(adj,max_deg,num_nodes):
+    """
+    以边的出度的one-hot编码为节点的度特征
+    """
     #For now it'll just return a 2-hot vector
     new_vals = torch.ones(adj['idx'].size(0))
     new_adj = {'idx':adj['idx'], 'vals': new_vals}
@@ -49,6 +58,12 @@ def get_1_hot_deg_feats(adj,max_deg,num_nodes):
     return hot_1
 
 def get_max_degs(args,dataset,all_window=False):
+    """
+    计算邻接矩阵的最大出度和最大入度，
+    如果关键词all_window为True,则使用所有时间窗口，即计算每个[0,t](t\in [min,max])内的邻接矩阵；
+    如果为False,则计算args条件给定的[t-adj_mat_time_window,t](t\in [min,max])时间窗口内的邻接矩阵
+    即如果all_window为True是起点固定的，如果all_window为False是窗口长度固定的。
+    """
     max_deg_out = []
     max_deg_in = []
     for t in range(dataset.min_time, dataset.max_time):
@@ -56,7 +71,8 @@ def get_max_degs(args,dataset,all_window=False):
             window = t+1
         else:
             window = args.adj_mat_time_window
-
+        #? t和window写反了?如果没有则计算的是每个[0,t](t\in [min,max])内的邻接矩阵
+        #? 如果
         cur_adj = get_sp_adj(edges = dataset.edges,
                              time = t,
                              weighted = False,
@@ -84,19 +100,30 @@ def get_max_degs_static(num_nodes, adj_matrix):
 
 
 def get_degree_vects(adj,num_nodes):
+    """
+    获取每个节点的出度和入度
+    """
     adj = u.make_sparse_tensor(adj,'long',[num_nodes])
     degs_out = adj.matmul(torch.ones(num_nodes,1,dtype = torch.long))
     degs_in = adj.t().matmul(torch.ones(num_nodes,1,dtype = torch.long))
     return degs_out, degs_in
 
 def get_sp_adj(edges,time,weighted,time_window):
-    idx = edges['idx']
-    subset = idx[:,ECOLS.time] <= time
-    subset = subset * (idx[:,ECOLS.time] > (time - time_window))
+    """
+    构造sparse的邻接矩阵，选择交易时间在[time-time_window,time]内的边构成邻接矩阵
+    
+    edges: 边列表
+    time: 时间点，构造中只保留时间小于该时间点的节点
+    weighted: 如果为True,则使用value进行加权，否额权重为1；
+    time_window: 
+    """
+    idx = edges['idx'] #* edges['idx']包括source,target,time,label四列
+    subset = idx[:,ECOLS.time] <= time # 选择交易时间点小于time的边
+    #* 选择交易时间大于time-time_window的边，即在时间点time内给定时间窗口的交易
+    subset = subset * (idx[:,ECOLS.time] > (time - time_window)) #
     idx = edges['idx'][subset][:,[ECOLS.source, ECOLS.target]]  
     vals = edges['vals'][subset]
     out = torch.sparse.FloatTensor(idx.t(),vals).coalesce()
-    
     
     idx = out._indices().t()
     if weighted:
@@ -106,7 +133,11 @@ def get_sp_adj(edges,time,weighted,time_window):
 
     return {'idx': idx, 'vals': vals}
 
+
 def get_edge_labels(edges,time):
+    """
+    选择等于给定时间点的边列表
+    """
     idx = edges['idx']
     subset = idx[:,ECOLS.time] == time
     idx = edges['idx'][subset][:,[ECOLS.source, ECOLS.target]]  
@@ -123,10 +154,10 @@ def get_node_mask(cur_adj,num_nodes):
     mask[non_zero] = 0
     
     return mask
-# 原设计目标应是按时间进行加权，但最终放弃了该方案
 
+# 原设计目标应是按时间进行加权，但最终放弃了该方案
 def get_static_sp_adj(edges,weighted):
-    idx = edges['idx']
+    idx = edges['idx'] #* edges['idx']包括source,target,time,label四列
     #subset = idx[:,ECOLS.time] <= time
     #subset = subset * (idx[:,ECOLS.time] > (time - time_window))
 

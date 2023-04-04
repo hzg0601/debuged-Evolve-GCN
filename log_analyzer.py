@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import os
 from pylab import *
 import pprint
-
+import sys
 ##### Parameters ######
 filename = sys.argv[-1] # log filename
 cl_to_plot_id = 1 # Target class, typically the low frequent one
