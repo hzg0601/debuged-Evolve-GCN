@@ -14,27 +14,31 @@ class Node_Cls_Tasker():
 
 		self.num_classes = 2 #? 去除了unknown类
 
-		self.feats_per_node = dataset.feats_per_node #
+		self.feats_per_node = dataset.feats_per_node #节点特征的维度
 
-		self.nodes_labels_times = dataset.nodes_labels_times
+		self.nodes_labels_times = dataset.nodes_labels_times # 
 
-		self.get_node_feats = self.build_get_node_feats(args,dataset)
+		self.get_node_feats = self.build_get_node_feats(args,dataset) # 节点特征矩阵
 
-		self.prepare_node_feats = self.build_prepare_node_feats(args,dataset)
+		self.prepare_node_feats = self.build_prepare_node_feats(args,dataset) #把节点特征矩阵转换为torch.tensor
 
 		self.is_static = False
 
 
 	def build_get_node_feats(self,args,dataset):
+		# 使用出度向量+入度向量作为度特征向量
 		if args.use_2_hot_node_feats:
-      	#  
+			# 计算给定数据集所有时间段内节点的最大出度和入度
 			max_deg_out, max_deg_in = tu.get_max_degs(args,dataset,all_window = True)
+			# 每个节点的度向量特征的维度等于最大出度+最大入度
 			self.feats_per_node = max_deg_out + max_deg_in
+			# 
 			def get_node_feats(i,adj):
 				return tu.get_2_hot_deg_feats(adj,
 											  max_deg_out,
 											  max_deg_in,
 											  dataset.num_nodes)
+		# 使用出度向量作为度特征向量
 		elif args.use_1_hot_node_feats:
 			max_deg,_ = tu.get_max_degs(args,dataset)
 			self.feats_per_node = max_deg
@@ -42,6 +46,7 @@ class Node_Cls_Tasker():
 				return tu.get_1_hot_deg_feats(adj,
 											  max_deg,
 											  dataset.num_nodes)
+		# 使用节点的固有特征作为特征向量
 		else:
 			def get_node_feats(i,adj):
 				return dataset.nodes_feats#[i] I'm ignoring the index since the features for Elliptic are static
@@ -49,13 +54,15 @@ class Node_Cls_Tasker():
 		return get_node_feats
 
 	def build_prepare_node_feats(self,args,dataset):
+		# 如果使用节点度one-hot作为特征向量，按度数值构造节点特征的维度
 		if args.use_2_hot_node_feats or args.use_1_hot_node_feats:
 			def prepare_node_feats(node_feats):
 				return u.sparse_prepare_tensor(node_feats,
 											   torch_size= [dataset.num_nodes,
 											   				self.feats_per_node])
 		# elif args.use_1_hot_node_feats:
-
+		# 如果不使用节点度one-hot作为特征向量，直接返回node_feats[0]作为特征，
+		#? 故node_feats[0]必然为原始特征
 		else:
 			def prepare_node_feats(node_feats):
 				return node_feats[0] #I'll have to check this up
