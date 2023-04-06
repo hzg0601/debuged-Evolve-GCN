@@ -2,7 +2,10 @@ import taskers_utils as tu
 import torch
 import utils as u
 """
-节点分类任务
+节点分类任务数据准备类，包括：
+1. 获取给定时间点前的历史节点特征列表、邻接矩阵列表、标签列表，
+将时间点、节点特征列表、邻接矩阵列表、标签列表组成一个字典；
+2. 需注意，在节点分类任务中只有两个类
 """
 class Node_Cls_Tasker():
 	def __init__(self,args,dataset):
@@ -16,7 +19,7 @@ class Node_Cls_Tasker():
 
 		self.feats_per_node = dataset.feats_per_node #节点特征的维度
 
-		self.nodes_labels_times = dataset.nodes_labels_times # 
+		self.nodes_labels_times = dataset.nodes_labels_times #节点的交易时间与标签
 
 		self.get_node_feats = self.build_get_node_feats(args,dataset) # 节点特征矩阵
 
@@ -70,10 +73,15 @@ class Node_Cls_Tasker():
 		return prepare_node_feats
 
 	def get_sample(self,idx,test):
+		"""
+		获取样本的历史邻接矩阵列表、节点特征列表、节点掩码列表、标签，
+		该类的主方法
+		idx: 指定时间点，时间区间为[idx-num_hist_steps,idx+1)
+  		"""
 		hist_adj_list = []
 		hist_ndFeats_list = []
 		hist_mask_list = []
-
+		# 
 		for i in range(idx - self.args.num_hist_steps, idx+1):
 			#all edgess included from the beginning
 			cur_adj = tu.get_sp_adj(edges = self.data.edges,
@@ -101,6 +109,9 @@ class Node_Cls_Tasker():
 
 
 	def get_node_labels(self,idx):
+		"""
+		获取给定时间点idx的节点ID和节点标签
+  		"""
 		# window_nodes = tu.get_sp_adj(edges = self.data.edges,
 		# 							 time = idx,
 		# 							 weighted = False,
@@ -119,8 +130,8 @@ class Node_Cls_Tasker():
 		# label_idx = torch.cat([non_fraudulent,fraudulent]).view(-1,1)
 		# label_vals = torch.cat([torch.zeros(non_fraudulent.size(0)),
 		# 					    torch.ones(fraudulent.size(0))])
-		node_labels = self.nodes_labels_times
-		subset = node_labels[:,2]==idx
+		node_labels = self.nodes_labels_times # node_label_times数据的顺序依次是node_id, label,time
+		subset = node_labels[:,2]==idx #? idx为时间点
 		label_idx = node_labels[subset,0]
 		label_vals = node_labels[subset,1]
 
@@ -137,8 +148,6 @@ class Static_Node_Cls_Tasker(Node_Cls_Tasker):
 		self.args = args
 
 		self.num_classes = 2
-
-
 
 		self.adj_matrix = tu.get_static_sp_adj(edges = self.data.edges, weighted = False)
 

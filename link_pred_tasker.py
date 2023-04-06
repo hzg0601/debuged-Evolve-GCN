@@ -2,7 +2,12 @@ import torch
 import taskers_utils as tu
 import utils as u
 
-
+"""
+链路预测任务的数据准备类，主要为：
+时间点、历史节点的特征列表、历史标签列表、历史邻接矩阵列表、历史掩码列表
+注意：用于节点分类和链路预测的数据集不通用，链接预测任务数据集自定义了
+prepare_node_feats方法
+"""
 class Link_Pred_Tasker():
 	'''
 	Creates a tasker object which computes the required inputs for training on a link prediction
@@ -28,10 +33,12 @@ class Link_Pred_Tasker():
 	def __init__(self,args,dataset):
 		self.data = dataset
 		#max_time for link pred should be one before
-		self.max_time = dataset.max_time - 1
+		self.max_time = dataset.max_time - 1 #? 链路预测任务的最大时间为数据集的最大时间-1
 		self.args = args
-		self.num_classes = 2
-
+		self.num_classes = 2 # 链路预测任务是一种分类任务，只有链接和不链接两类
+		# 如果不使用节点的度one-hot向量，每个节点特征的维度即数据的固有维度
+		# 如果使用节点的度one-hot向量，则调用build_get_node_feats，
+		# 根据出度、入度定义特征向量的维度
 		if not (args.use_2_hot_node_feats or args.use_1_hot_node_feats):
 			self.feats_per_node = dataset.feats_per_node
 
@@ -74,18 +81,28 @@ class Link_Pred_Tasker():
 	# 		return tu.get_non_existing_edges
 
 	def build_prepare_node_feats(self,args,dataset):
+		"""
+		如果使用使用节点的度one-hot向量，则返回one-hot编码的度特征作为特征向量；
+		如果不使用节点的度one-hot向量，则直接调用数据的prepare_node_feats方法，返回节点的固有特征；
+		并组装成torch.tensor
+  		"""
 		if args.use_2_hot_node_feats or args.use_1_hot_node_feats:
 			def prepare_node_feats(node_feats):
 				return u.sparse_prepare_tensor(node_feats,
 											   torch_size= [dataset.num_nodes,
 											   				self.feats_per_node])
 		else:
-			prepare_node_feats = self.data.prepare_node_feats
+			prepare_node_feats = self.data.prepare_node_feats 
 
 		return prepare_node_feats
 
 
 	def build_get_node_feats(self,args,dataset):
+		"""
+		根据预定义的特征形式，设定节点特征的维度，抽取numpy.ndarray形式的特征
+		输出作为prepare_node_feats的输入
+
+  		"""
 		if args.use_2_hot_node_feats:
 			max_deg_out, max_deg_in = tu.get_max_degs(args,dataset)
 			self.feats_per_node = max_deg_out + max_deg_in
@@ -109,16 +126,25 @@ class Link_Pred_Tasker():
 
 
 	def get_sample(self,idx,test, **kwargs):
+		"""
+		获取样本的历史邻接矩阵列表、节点特征列表、节点掩码列表、标签，
+		该类的主方法
+		idx: 指定时间点，时间区间为[idx-num_hist_steps,idx+1)
+  		"""
 		hist_adj_list = []
 		hist_ndFeats_list = []
 		hist_mask_list = []
 		existing_nodes = []
 		for i in range(idx - self.args.num_hist_steps, idx+1):
+			# 返回值为dict,idx为节点的边列表；vals为边的权重值
+			# 构造sparse的邻接矩阵，选择交易时间在[time-time_window,time]内的边构成邻接矩阵
 			cur_adj = tu.get_sp_adj(edges = self.data.edges, 
 								   time = i,
 								   weighted = True,
 								   time_window = self.args.adj_mat_time_window)
-
+			#* 如果进行智能采样，则以existing_nodes为target候选集,以边列表第一列为source候选集
+    		#* 如果不进行智能采样，则全体节点为target、source候选集
+			#* torch.unique(),将Tensor中的所有点构成一个向量，对向量去重，返回的是一个1维Tensor
 			if self.args.smart_neg_sampling:
 				existing_nodes.append(cur_adj['idx'].unique())
 			else:
@@ -135,21 +161,24 @@ class Link_Pred_Tasker():
 			hist_mask_list.append(node_mask)
 
 		# This would be if we were training on all the edges in the time_window
+		#* 链路预测中的标签即邻接矩阵，因此以下一个时间点的邻接矩阵为标签邻接矩阵
 		label_adj = tu.get_sp_adj(edges = self.data.edges, 
 								  time = idx+1,
 								  weighted = False,
 								  time_window =  self.args.adj_mat_time_window)
 		if test:
-			neg_mult = self.args.negative_mult_test
+			neg_mult = self.args.negative_mult_test # 采样的个数
 		else:
 			neg_mult = self.args.negative_mult_training
 			
 		if self.args.smart_neg_sampling:
 			existing_nodes = torch.cat(existing_nodes)
 
-		
+		# 如果all_edges为True,对全连接边列表中的边进行编码，将不在给定的adj的边全部取出
 		if 'all_edges' in kwargs.keys() and kwargs['all_edges'] == True:
 			non_exisiting_adj = tu.get_all_non_existing_edges(adj = label_adj, tot_nodes = self.data.num_nodes)
+		# 如果all_edges为False, 则从当前时间点的邻接矩阵中选择目标节点，从label_adj[0]中采样源节点
+		# 采样number条边
 		else:
 			non_exisiting_adj = tu.get_non_existing_edges(adj = label_adj,
 													  number = label_adj['vals'].size(0) * neg_mult,

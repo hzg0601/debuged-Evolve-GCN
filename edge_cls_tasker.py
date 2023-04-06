@@ -20,6 +20,11 @@ class Edge_Cls_Tasker():
 		self.is_static = False
 
 	def build_prepare_node_feats(self,args,dataset):
+		"""
+		如果使用使用节点的度one-hot向量，则返回one-hot编码的度特征作为特征向量；
+		如果不使用节点的度one-hot向量，则直接调用数据的prepare_node_feats方法，返回节点的固有特征；
+		并组装成torch.tensor
+  		"""
 		if args.use_2_hot_node_feats or args.use_1_hot_node_feats:
 			def prepare_node_feats(node_feats):
 				return u.sparse_prepare_tensor(node_feats,
@@ -32,6 +37,11 @@ class Edge_Cls_Tasker():
 
 
 	def build_get_node_feats(self,args,dataset):
+		"""
+		根据预定义的特征形式，设定节点特征的维度，抽取numpy.ndarray形式的特征
+		输出作为prepare_node_feats的输入
+
+  		"""
 		if args.use_2_hot_node_feats:
 			max_deg_out, max_deg_in = tu.get_max_degs(args,dataset)
 			self.feats_per_node = max_deg_out + max_deg_in
@@ -55,6 +65,11 @@ class Edge_Cls_Tasker():
 
 
 	def get_sample(self,idx,test):
+		"""
+		获取样本的历史邻接矩阵列表、节点特征列表、节点掩码列表、标签，
+		该类的主方法
+		idx: 指定时间点，时间区间为[idx-num_hist_steps,idx+1)
+		"""
 		hist_adj_list = []
 		hist_ndFeats_list = []
 		hist_mask_list = []
@@ -71,11 +86,10 @@ class Edge_Cls_Tasker():
 			hist_adj_list.append(cur_adj)
 			hist_ndFeats_list.append(node_feats)
 			hist_mask_list.append(node_mask)
-
+		# 获取给定时间点的边的标签，返回值是一个dict,边列表和边标签
 		label_adj = tu.get_edge_labels(edges = self.data.edges, 
 								  	   time = idx)
 
-		
 		return {'idx': idx,
 				'hist_adj_list': hist_adj_list,
 				'hist_ndFeats_list': hist_ndFeats_list,

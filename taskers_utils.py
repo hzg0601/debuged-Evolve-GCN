@@ -139,7 +139,7 @@ def get_sp_adj(edges,time,weighted,time_window):
 
 def get_edge_labels(edges,time):
     """
-    选择等于给定时间点的边列表
+    选择等于给定时间点的边列表的标签
     """
     idx = edges['idx']
     subset = idx[:,ECOLS.time] == time
@@ -276,7 +276,7 @@ def get_non_existing_edges(adj,number, tot_nodes, smart_sampling, existing_nodes
     # 取number,n^2-2n二者中的最小值
     #* 边数小于等于n^2-2n
     num_edges = min(number,idx.shape[1] * (idx.shape[1]-1) - len(true_ids))
-    #* 如果进行智能采样，则以existing_nodes为target候选集,以idx[0]为source候选集
+    #* 如果进行智能采样，则以existing_nodes为target候选集,以边列表第一列为source候选集
     #* 如果不进行智能采样，则全体节点为target、source候选集
     if smart_sampling:
         #existing_nodes = existing_nodes.numpy()

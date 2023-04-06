@@ -6,7 +6,12 @@ import time
 import tarfile
 import itertools
 import numpy as np
-
+"""
+组装elliptic_temporal数据集，
+注意该数据集删除了unknown标签;
+即对于图使用全部数据进行训练，但仅对0，1标签进行预测和验证;
+node_time数据的顺序为target,source,time;
+"""
 
 class Elliptic_Temporal_Dataset():
 	def __init__(self,args):
@@ -45,6 +50,7 @@ class Elliptic_Temporal_Dataset():
 		nodes_labels_times =[]
 		for i in range(len(labels)):
 			label = labels[i,[lcols.label]].long()
+			# 删除unknown标签，只保留0,1两类标签
 			if label>=0:
 		 		nid=labels[i,[lcols.nid]].long()
 		 		time=times[nid,[tcols.time]].long()
@@ -59,7 +65,7 @@ class Elliptic_Temporal_Dataset():
 		tcols = u.Namespace({'source': 0,
 							 'target': 1,
 							 'time': 2})
-
+		# 数据的顺序依次是source, target,time
 		data = torch.cat([data,data[:,[1,0,2]]])
 
 		self.max_time = data[:,tcols.time].max()
