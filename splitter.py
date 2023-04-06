@@ -64,6 +64,7 @@ class splitter():
             end = args.dev_proportion + args.train_proportion
             end = int(np.floor(tasker.data.max_time.type(torch.float) * end))
             if args.task == 'link_pred':
+                # 返回的是一个生成器
                 dev = data_split(tasker, start, end, test = True, all_edges=True)
             else:
                 dev = data_split(tasker, start, end, test = True)
@@ -96,6 +97,11 @@ class data_split(Dataset):
     def __init__(self, tasker, start, end, test, **kwargs):
         '''
         start and end are indices indicating what items belong to this split
+        tasker: 任务实例,node_cls_tasker,link_pred_tasker,edge_clas_tasker
+        start:开始的时间点
+        end: 结束的时间点
+        test: 对于link_pred_tasker,需定义test参数来控制训练和测试中负采样的数量
+        因此训练是逐步自回归的，数据每次增加一个时间步，每次都加载历史数据
         '''
         self.tasker = tasker
         self.start = start
@@ -107,6 +113,8 @@ class data_split(Dataset):
         return self.end-self.start
 
     def __getitem__(self,idx):
+        #* 由此可以看出训练是逐步自回归的，数据每次增加一个时间步，每次都加载以前的全部历史数据
+        #* 其返回的是一个生成器
         idx = self.start + idx
         t = self.tasker.get_sample(idx, test = self.test, **self.kwargs)
         return t
@@ -116,6 +124,9 @@ class static_data_split(Dataset):
     def __init__(self, tasker, indexes, test):
         '''
         start and end are indices indicating what items belong to this split
+        tasker: 任务实例,node_cls_tasker,link_pred_tasker,edge_clas_tasker
+        indexes: 时间点的列表
+        test: 对于link_pred_tasker,需定义test参数来控制训练和测试中负采样的数量
         '''
         self.tasker = tasker
         self.indexes = indexes

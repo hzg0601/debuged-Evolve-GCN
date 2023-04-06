@@ -15,11 +15,11 @@ if not os.path.exists(log_file):
 class Trainer():
 	def __init__(self,args, splitter, gcn, classifier, comp_loss, dataset, num_classes):
 		self.args = args
-		self.splitter = splitter
-		self.tasker = splitter.tasker
-		self.gcn = gcn
-		self.classifier = classifier
-		self.comp_loss = comp_loss
+		self.splitter = splitter # 数据集的splitter实例
+		self.tasker = splitter.tasker #tasker也是splitter的传入参数
+		self.gcn = gcn # 图神经网络模型实例
+		self.classifier = classifier # 分类器的实例
+		self.comp_loss = comp_loss # 损失计算方法
 
 		self.num_nodes = dataset.num_nodes
 		self.data = dataset
@@ -35,6 +35,9 @@ class Trainer():
 			self.hist_ndFeats_list = [self.tasker.nodes_feats.float()]
 
 	def init_optimizers(self,args):
+		"""
+		定义gcn和分类器的优化器，gcn和分类器是分开优化的
+		"""
 		params = self.gcn.parameters()
 		self.gcn_opt = torch.optim.Adam(params, lr = args.learning_rate)
 		params = self.classifier.parameters()
@@ -61,6 +64,9 @@ class Trainer():
 			return 0
 
 	def train(self):
+		"""
+		多轮训练方法
+		"""
 		self.tr_step = 0
 		best_eval_valid = 0
 		eval_valid = 0
@@ -68,18 +74,21 @@ class Trainer():
 
 		for e in range(self.args.num_epochs):
 			eval_train, nodes_embs = self.run_epoch(self.splitter.train, e, 'TRAIN', grad = True)
+			# 每次训练后都进行验证
 			if len(self.splitter.dev)>0 and e>self.args.eval_after_epochs:
 				eval_valid, _ = self.run_epoch(self.splitter.dev, e, 'VALID', grad = False)
 				if eval_valid>best_eval_valid:
 					best_eval_valid = eval_valid
-					epochs_without_impr = 0
+					epochs_without_impr = 0 # 如果表现有改善则定义epochs_without_impr为零
 					print ('### w'+str(self.args.rank)+') ep '+str(e)+' - Best valid measure:'+str(eval_valid))
 				else:
-					epochs_without_impr+=1
+					epochs_without_impr+=1 
+					# 如果表现无改善则定义epochs_without_impr+1，epochs_without_impr超过最大
+					# early_stop的阈值，则停止训练
 					if epochs_without_impr>self.args.early_stop_patience:
 						print ('### w'+str(self.args.rank)+') ep '+str(e)+' - Early stop.')
 						break
-
+			#? 每次训练后既验证也测试
 			if len(self.splitter.test)>0 and eval_valid==best_eval_valid and e>self.args.eval_after_epochs:
 				eval_test, _ = self.run_epoch(self.splitter.test, e, 'TEST', grad = False)
 
@@ -90,6 +99,13 @@ class Trainer():
 
 
 	def run_epoch(self, split, epoch, set_name, grad):
+		"""
+		单轮训练方法
+		split->torch.DataLoader: 数据集，
+		epoch: 训练的轮次
+		set_name: 数据集名称,TRAIN,VALID,TEST
+		grad: 是否进行梯度追踪，对于训练值为True,验证和测试为False
+		"""
 		t0 = time.time()
 		log_interval=999
 		if set_name=='TEST':
@@ -97,6 +113,7 @@ class Trainer():
 		self.logger.log_epoch_start(epoch, len(split), set_name, minibatch_log_interval=log_interval)
 
 		torch.set_grad_enabled(grad)
+		#* 训练是逐步回归的，每次增加一个时间步，加载该时间点之前的全部历史数据
 		for s in split:
 			if self.tasker.is_static:
 				s = self.prepare_static_sample(s)
@@ -123,12 +140,19 @@ class Trainer():
 		return eval_measure, nodes_embs
 
 	def predict(self,hist_adj_list,hist_ndFeats_list,node_indices,mask_list):
+		"""
+		调用gcn模型训练给定时间点的历史数据
+
+		"""
+		# 获取所有节点的嵌入向量
 		nodes_embs = self.gcn(hist_adj_list,
 							  hist_ndFeats_list,
 							  mask_list)
 
 		predict_batch_size = 100000
 		gather_predictions=[]
+		# 预测是分批进行的，
+		# 毫无意义
 		for i in range(1 +(node_indices.size(1)//predict_batch_size)):
 			cls_input = self.gather_node_embs(nodes_embs, node_indices[:, i*predict_batch_size:(i+1)*predict_batch_size])
 			predictions = self.classifier(cls_input)
@@ -144,6 +168,9 @@ class Trainer():
 		return torch.cat(cls_input,dim = 1)
 
 	def optim_step(self,loss):
+		"""
+		gcn模型和分类器是分开优化的
+		"""
 		self.tr_step += 1
 		loss.backward()
 
@@ -158,6 +185,7 @@ class Trainer():
 	def prepare_sample(self,sample):
 		"""
 		将数据转换为torch.tensor，并放到device上
+		sample:包含了给定时间点前，时间窗口内，所有数据的列表的dict
   		"""
 		sample = u.Namespace(sample)
 		for i,adj in enumerate(sample.hist_adj_list):
@@ -183,6 +211,9 @@ class Trainer():
 		return sample
 
 	def prepare_static_sample(self,sample):
+		"""
+		对静态数据集进行数据组装
+		"""
 		sample = u.Namespace(sample)
 
 		sample.hist_adj_list = self.hist_adj_list
