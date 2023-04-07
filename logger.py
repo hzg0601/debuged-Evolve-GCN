@@ -9,8 +9,10 @@ import time
 from sklearn.metrics import average_precision_score
 from scipy.sparse import coo_matrix
 import numpy as np
+import os
 
-
+if not os.path.exists("./log/"):
+    os.mkdir("./log")
 
 
 class Logger():
