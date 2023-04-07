@@ -32,6 +32,7 @@ def preprocess_epllitic(data_dir='./data/elliptic_bitcoin_dataset/',
     feature_df.iloc[:,0] = feature_df.iloc[:,0].apply(
         lambda x: code_dict[x]).astype('float')
     feature_df.iloc[:,1] = feature_df.iloc[:,1].astype('float')
+
     # 2. 重新编码class的节点ID，和类别
     
     class_df.iloc[:,0] = class_df.iloc[:,0].apply(lambda x: code_dict[x])
@@ -42,28 +43,32 @@ def preprocess_epllitic(data_dir='./data/elliptic_bitcoin_dataset/',
     # 3 取出新的节点编号和时间点
     nodetime_df = feature_df.iloc[:,[0,1]]
     # 修改nodetime_df的列名
-    nodetime_df.columns = ["txId",'timestamp']
-    
+    nodetime_df.columns = ["txId1",'timestamp']
+    # 4. 重新编码 edgelist的节点编号
+    edgelist_df = edgelist_df.applymap(lambda x: code_dict[x]).astype('float')
     # 4. 节点特征中的时间点是发生交易的时间点，因此发生交易的两个节点的时间点一致
     # 只需将nodetime_df左连接到edge_list上就可以得到带时间步的edge_list
     edgelist_df_timed = pd.merge(edgelist_df,nodetime_df,
-                                 how='left',left_on='txId1',right_on='txId')
+                                 how='left',on='txId1')
     # 5. 定义各文件的文件名
     file_names = ["./data/elliptic_temporal/elliptic_txs_features.csv",
                   "./data/elliptic_temporal/elliptic_txs_classes.csv",
-                  "./data/elliptic_temporal/elliptic_txs_edgelist.csv"]
+                  "./data/elliptic_temporal/elliptic_txs_edgelist_timed.csv",
+                  "./data/elliptic_temporal/elliptic_txs_nodetime.csv"]
     # 写入本地文件
     if not os.path.exists('./data/elliptic_temporal'):
         os.mkdir('./data/elliptic_temporal/')
     feature_df.to_csv(file_names[0],index=False)
     class_df.to_csv(file_names[1],index=False)
     edgelist_df_timed.to_csv(file_names[2],index=False)
+    nodetime_df.to_csv(file_names[3],index=False)
     # 6. 打包维elliptic_bitcoin_datset.tar.gz文件
     # 打包完就删除
     tar = tarfile.open("./data/elliptic_temporal/elliptic_bitcoin_dataset_cont.tar.gz",'w:gz')
 
     for file in file_names:
-        tar.add(file)
+
+        tar.add(file,arcname=file.split("/")[-1]) # arcname指定文件写入tar.gz的文件，是否包含父目录
         os.remove(file)
     tar.close()
     print("done!")

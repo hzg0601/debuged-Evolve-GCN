@@ -127,13 +127,13 @@ def load_data_from_tar(file, tar_archive, replace_unknow=False, starting_line=1,
 
 def create_parser():
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument('--config_file',default='experiments/parameters_example.yaml', type=argparse.FileType(mode='r'), help='optional, yaml file containing parameters to be used, overrides command line parameters')
+    parser.add_argument('--config_file',default='experiments/parameters_elliptic_egcn_h.yaml', type=argparse.FileType(mode='r'), help='optional, yaml file containing parameters to be used, overrides command line parameters')
     return parser
 
 def parse_args(parser):
     args = parser.parse_args()
     if args.config_file:
-        data = yaml.load(args.config_file)
+        data = yaml.load(args.config_file,Loader=yaml.FullLoader) # pyyaml>=5.1 需要 Loader 参数。
         delattr(args, 'config_file')
         # print(data)
         arg_dict = args.__dict__
