@@ -1,0 +1,1 @@
+nohup bash bash_python_egcn.sh>egcns.log 2>&1 &

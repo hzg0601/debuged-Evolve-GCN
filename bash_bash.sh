@@ -1,1 +1,0 @@
-nohup bash bash_python.sh>bash.log 2>&1 &

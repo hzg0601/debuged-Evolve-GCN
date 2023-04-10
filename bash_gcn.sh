@@ -1,0 +1,1 @@
+nohup bash bash_python_gcn.sh>gcns.log 2>&1 &

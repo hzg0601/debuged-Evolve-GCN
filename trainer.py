@@ -96,7 +96,9 @@ class Trainer():
 					self.save_node_embs_csv(nodes_embs, self.splitter.train_idx, log_file+'_train_nodeembs.csv.gz')
 					self.save_node_embs_csv(nodes_embs, self.splitter.dev_idx, log_file+'_valid_nodeembs.csv.gz')
 					self.save_node_embs_csv(nodes_embs, self.splitter.test_idx, log_file+'_test_nodeembs.csv.gz')
-
+				elif self.args.save_node_embeddings and not self.tasker.is_static:
+					node_embs_numpy = nodes_embs.detach().numpy()
+					pd.DataFrame(node_embs_numpy).to_csv(log_file+".csv.gz", header=None, index=None, compression='gzip')
 
 	def run_epoch(self, split, epoch, set_name, grad):
 		"""
