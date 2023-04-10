@@ -174,7 +174,7 @@ def build_gcn(args,tasker):
 		else:
 			raise NotImplementedError('need to finish modifying the models')
 
-def build_classifier(args,tasker):
+def build_classifier(args,tasker,feats_per_node=None):
 	"""
 	构建分类器实例。模型中分类器和嵌入模型是分开优化的，因此它是输入是嵌入模型的输出
 	
@@ -190,7 +190,7 @@ def build_classifier(args,tasker):
 		in_feats = args.gcn_parameters['lstm_l2_feats'] * mult
 	# 如果是skipgcn等，则需要将原始特征与嵌入特征合并
 	elif args.model == 'skipfeatsgcn' or args.model == 'skipfeatsegcn_h':
-		in_feats = (args.gcn_parameters['layer_2_feats'] + args.gcn_parameters['feats_per_node']) * mult
+		in_feats = (args.gcn_parameters['layer_2_feats'] + feats_per_node) * mult
 	# 其他情况，输入是最后一层的输出
 	else:
 		in_feats = args.gcn_parameters['layer_2_feats'] * mult
@@ -258,7 +258,8 @@ if __name__ == '__main__':
 	splitter = sp.splitter(args,tasker)
 	#build the models
 	gcn = build_gcn(args, tasker)
-	classifier = build_classifier(args,tasker)
+	# args.gcn_parameters参数未更新
+	classifier = build_classifier(args,tasker,feats_per_node=tasker.feats_per_node) if args.model=="skipfeatsgcn" else build_classifier(args,tasker)
 	#build a loss
 	cross_entropy = ce.Cross_Entropy(args,dataset).to(args.device)
 

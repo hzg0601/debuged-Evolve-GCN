@@ -1,4 +1,4 @@
-models=(gcn skipgcn skipfeatsgcn egcn_o egcn_h)
+models=(skipgcn skipfeatsgcn gcn egcn_o egcn_h)
 file='./experiments/parameters_example.yaml'
 i=0
 for model in ${models[@]};

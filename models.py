@@ -46,7 +46,7 @@ class Sp_Skip_GCN(Sp_GCN):
         super().__init__(args,activation)
         self.W_feat = Parameter(torch.Tensor(args.feats_per_node, args.layer_1_feats))
 
-    def forward(self,A_list, Nodes_list = None):
+    def forward(self,A_list, Nodes_list = None, nodes_mask_list=None):
         node_feats = Nodes_list[-1]
         #A_list: T, each element sparse tensor
         #take only last adj matrix in time
@@ -58,8 +58,8 @@ class Sp_Skip_GCN(Sp_GCN):
         # self.node_feats = Nxk
         #
         # note(bwheatman, tfk): change order of matrix multiply
-        l1 = self.activation(Ahat.matmul(node_feats.matmul(self.W1)))
-        l2 = self.activation(Ahat.matmul(l1.matmul(self.W2)) + (node_feats.matmul(self.W3)))
+        l1 = self.activation(Ahat.matmul(node_feats.matmul(self.w_list[0])))
+        l2 = self.activation(Ahat.matmul(l1.matmul(self.w_list[1])) + (node_feats.matmul(self.w_list[0])))
 
         return l2
 
@@ -67,13 +67,13 @@ class Sp_Skip_NodeFeats_GCN(Sp_GCN):
     def __init__(self,args,activation):
         super().__init__(args,activation)
 
-    def forward(self,A_list, Nodes_list = None):
+    def forward(self,A_list, Nodes_list = None, nodes_mask_list=None):
         node_feats = Nodes_list[-1]
         Ahat = A_list[-1]
         last_l = self.activation(Ahat.matmul(node_feats.matmul(self.w_list[0])))
         for i in range(1, self.num_layers):
             last_l = self.activation(Ahat.matmul(last_l.matmul(self.w_list[i])))
-        skip_last_l = torch.cat((last_l,node_feats), dim=1)   # use node_feats.to_dense() if 2hot encoded input
+        skip_last_l = torch.cat((last_l,node_feats.to_dense()), dim=1)   # use node_feats.to_dense() if 2hot encoded input
         return skip_last_l
 
 class Sp_GCN_LSTM_A(Sp_GCN):
