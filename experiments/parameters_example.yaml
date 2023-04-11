@@ -18,7 +18,7 @@ elliptic_args:
 use_cuda: True
 use_logfile: False # If True save the output in a log file, if False in stdout
 
-model: gcn
+model: egcn_h
            #HELP: gcn,skipgcn,skipfeatsgcn,skipgcn使用加法，skipfeatsgcn使用concat
            #      gruA
            #      gruB

@@ -123,7 +123,7 @@ class Trainer():
 				s = self.prepare_sample(s)
 
 			predictions, nodes_embs = self.predict(s.hist_adj_list,
-												   s.hist_ndFeats_list,
+												   s.hist_ndFeats_list, #? 时变属性
 												   s.label_sp['idx'],
 												   s.node_mask_list)
 
@@ -147,6 +147,8 @@ class Trainer():
 
 		"""
 		# 获取所有节点的嵌入向量
+		# 每一层都进行逐步回归，保留历史的节点嵌入列表，用作下一层的输入，
+		# 以最后一层输出的最后一个时间点作为最终的输出
 		nodes_embs = self.gcn(hist_adj_list,
 							  hist_ndFeats_list,
 							  mask_list)
