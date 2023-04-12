@@ -44,28 +44,28 @@ vae\gan\diffusion\transformer来更新LightGCN的权重，然后利用更新的�
 2. 一次更新所有权重，使用全部历史嵌入向量进行下游任务
 """
 
-class IGCN(torch.nn.Module):
+class TGCN(torch.nn.Module):
     def __init__(self, args, activation, device='cpu', skipfeats=False):
         super().__init__()
-        IGB_args = u.Namespace({})
+        devgcn_args = u.Namespace({})
         # 规定每一层的特征的维度
         feats = [args.feats_per_node,
                  args.layer_1_feats,
                  args.layer_2_feats]
         self.device = device
         self.skipfeats = skipfeats
-        self.igb_layers = []
+        self.devgcn_layers = []
         self._parameters = nn.ParameterList()
         # 似乎只有3层
         for i in range(1,len(feats)):
-            IGB_args = u.Namespace({'in_feats' : feats[i-1],
+            devgcn_args = u.Namespace({'in_feats' : feats[i-1],
                                      'out_feats': feats[i],
                                      'activation': activation})
 
-            igb = InformerGCNBlock(IGB_args)
-            #print (i,'igb', igb)
-            self.igb_layers.append(igb.to(self.device))
-            self._parameters.extend(list(self.igb_layers[-1].parameters()))
+            devgcn = DELGCNLayer(devgcn_args)
+            #print (i,'devgcn', devgcn)
+            self.devgcn_layers.append(devgcn.to(self.device))
+            self._parameters.extend(list(self.devgcn_layers[-1].parameters()))
 
     def parameters(self):
         return self._parameters
@@ -73,7 +73,7 @@ class IGCN(torch.nn.Module):
     def forward(self,A_list, Nodes_list,nodes_mask_list):
         node_feats= Nodes_list[-1]
 
-        for unit in self.igb_layers:
+        for unit in self.devgcn_layers:
             # GECU层是每次都初始化gcn，但保留上一次学习到的嵌入矩阵列表
             # 用上一次学习到的嵌入矩阵列表进行训练
             Nodes_list = unit(A_list,Nodes_list,nodes_mask_list)
@@ -83,23 +83,14 @@ class IGCN(torch.nn.Module):
         if self.skipfeats:
             out = torch.cat((out,node_feats), dim=1)   # use node_feats.to_dense() if 2hot encoded input 
         return out
-        
+
 
 class LightGCN(torch.nn.Module):
-    def __init__(self,args) -> None:
+    def __init__(self,n_layers,keep_prob) -> None:
         super().__init__()
-        self.args = args
-        # lgcn_args = u.Namespace({})
-
-        self.in_features = args.feats_per_node
-        self.emb_dim = args.out_feats 
-        self.n_layers = args.n_layers
-        self.keep_prob = args.keep_prob 
-
-        self.weight = torch.nn.Linear(in_features=args.feats_per_node,out_features=args.out_feats)
-        # random normal init seems to be a better choice when lightGCN 
-        # actually don't use any non-linear activation function
-        nn.init.normal_(self.weight, std=0.1)
+        
+        self.n_layers = n_layers
+        self.keep_prob = keep_prob 
 
     def dropout(self, x, keep_prob):
         # 
@@ -117,13 +108,13 @@ class LightGCN(torch.nn.Module):
         g = torch.sparse.FloatTensor(index.t(), values, size)
         return g
     
-    def graph_diffusion(self,edge_index:torch.Tensor,feats:torch.Tensor):
+    def graph_diffusion(self,edge_index:torch.Tensor,feats:torch.Tensor,weight_mat):
         """
         propagate methods for lightGCN, 
         !!! edge_index must be a sparse tensor
         """       
         #   torch.split(all_emb , [self.n_users, self.n_items])
-        embs = [torch.mm(feats,self.weight)]
+        embs = [torch.mm(feats,weight_mat)]
 
         if self.keep_prob:
 
@@ -137,20 +128,18 @@ class LightGCN(torch.nn.Module):
             embs.append(all_emb)
 
         embs = torch.stack(embs, dim=1)
-        #print(embs.size())
+
         light_out = torch.mean(embs, dim=1)
         return light_out
 
 
-class InformerGCNBlock(torch.nn.Module):
+class DELGCNLayer(torch.nn.Module):
     def __init__(self,args):
         super().__init__()
         self.args = args
-        informer_args = u.Namespace({})
-        lgcn_args = u.Namespace({})
-
-        self.evolve_weights = Informer(informer_args)
-        self.lgcn = LightGCN(lgcn_args)
+        encoder_layer = nn.TransformerEncoderLayer(d_model=self.args.out_feats,nhead=self.args.n_heads)
+        self.evolve_weights = nn.TransformerEncoder(encoder_layer,num_layers=self.args.de_layers)
+        self.lgcn = LightGCN(n_layers=self.args.lgcn_layers,keep_prob=self.args.keep_prob)
         self.activation = self.args.activation
         self.GCN_weights = Parameter(torch.Tensor(self.args.in_feats,self.args.out_feats))
         self.reset_param(self.GCN_weights)
