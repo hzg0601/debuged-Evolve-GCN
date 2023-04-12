@@ -9,6 +9,7 @@ import math
 class Sp_GCN(torch.nn.Module):
     def __init__(self,args,activation):
         super().__init__()
+        self.args = args 
         self.activation = activation
         self.num_layers = args.num_layers
 
@@ -44,6 +45,7 @@ class Sp_GCN(torch.nn.Module):
 class Sp_Skip_GCN(Sp_GCN):
     def __init__(self,args,activation):
         super().__init__(args,activation)
+        # self.args = args
         self.W_feat = Parameter(torch.Tensor(args.feats_per_node, args.layer_1_feats))
 
     def forward(self,A_list, Nodes_list = None, nodes_mask_list=None):
@@ -66,6 +68,8 @@ class Sp_Skip_GCN(Sp_GCN):
 class Sp_Skip_NodeFeats_GCN(Sp_GCN):
     def __init__(self,args,activation):
         super().__init__(args,activation)
+        # self.args =args
+        # self.activation = activation
 
     def forward(self,A_list, Nodes_list = None, nodes_mask_list=None):
         node_feats = Nodes_list[-1]
@@ -73,7 +77,10 @@ class Sp_Skip_NodeFeats_GCN(Sp_GCN):
         last_l = self.activation(Ahat.matmul(node_feats.matmul(self.w_list[0])))
         for i in range(1, self.num_layers):
             last_l = self.activation(Ahat.matmul(last_l.matmul(self.w_list[i])))
-        skip_last_l = torch.cat((last_l,node_feats.to_dense()), dim=1)   # use node_feats.to_dense() if 2hot encoded input
+        if node_feats.is_sparse:
+            skip_last_l = torch.cat((last_l,node_feats.to_dense()), dim=1)   
+        else:
+            skip_last_l = torch.cat((last_l,node_feats), dim=1)# use node_feats.to_dense() if 2hot encoded input
         return skip_last_l
 
 class Sp_GCN_LSTM_A(Sp_GCN):

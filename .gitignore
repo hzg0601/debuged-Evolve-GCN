@@ -1,5 +1,9 @@
 /data
 /__pycache__
+/log
 *.log
 *.pyc
 __pycache__/utils.cpython-38.pyc
+/embs
+*.csv.gz
+*.gz
