@@ -23,7 +23,7 @@ import node_cls_tasker as nct
 import models as mls
 import egcn_h
 import egcn_o
-
+import delgcn
 
 import splitter as sp
 import Cross_Entropy as ce
@@ -149,6 +149,8 @@ def build_gcn(args,tasker):
 	gcn_args.feats_per_node = tasker.feats_per_node
 	if args.model == 'gcn':
 		return mls.Sp_GCN(gcn_args,activation = torch.nn.RReLU()).to(args.device)
+	elif args.model == "delgcn":
+		return delgcn.DELGCN(gcn_args,activation=torch.nn.RReLU()).to(args.device)
 	elif args.model == 'skipgcn':
 		return mls.Sp_Skip_GCN(gcn_args,activation = torch.nn.RReLU()).to(args.device)
 	elif args.model == 'skipfeatsgcn':

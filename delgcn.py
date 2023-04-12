@@ -44,7 +44,7 @@ vae\gan\diffusion\transformer来更新LightGCN的权重，然后利用更新的�
 2. 一次更新所有权重，使用全部历史嵌入向量进行下游任务
 """
 
-class TGCN(torch.nn.Module):
+class DELGCN(torch.nn.Module):
     def __init__(self, args, activation, device='cpu', skipfeats=False):
         super().__init__()
         devgcn_args = u.Namespace({})
