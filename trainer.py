@@ -114,7 +114,7 @@ class Trainer():
 		if set_name=='TEST':
 			log_interval=1
 		self.logger.log_epoch_start(epoch, len(split), set_name, minibatch_log_interval=log_interval)
-
+		torch.cuda.empty_cache()
 		torch.set_grad_enabled(grad)
 		#* 训练是逐步回归的，每次增加一个时间步，加载该时间点之前的全部历史数据
 		for s in split:
