@@ -91,6 +91,7 @@ class Trainer():
 			#? 每次训练后既验证也测试
 			if len(self.splitter.test)>0 and eval_valid==best_eval_valid and e>self.args.eval_after_epochs:
 				eval_test, _ = self.run_epoch(self.splitter.test, e, 'TEST', grad = False)
+				print(f'the test performance is:{eval_test}')
 
 				if self.args.save_node_embeddings and self.tasker.is_static:
 					self.save_node_embs_csv(nodes_embs, self.splitter.train_idx, log_file+'_train_nodeembs.csv.gz')

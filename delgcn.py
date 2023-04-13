@@ -47,25 +47,30 @@ vae\gan\diffusion\transformer来更新LightGCN的权重，然后利用更新的�
 class DELGCN(torch.nn.Module):
     def __init__(self, args, activation, device='cpu', skipfeats=False):
         super().__init__()
-        devgcn_args = u.Namespace({})
+        delgcn_args = u.Namespace({})
         # 规定每一层的特征的维度
         feats = [args.feats_per_node,
                  args.layer_1_feats,
                  args.layer_2_feats]
         self.device = device
         self.skipfeats = skipfeats
-        self.devgcn_layers = []
+        self.delgcn_layers = []
         self._parameters = nn.ParameterList()
         # 似乎只有3层
         for i in range(1,len(feats)):
-            devgcn_args = u.Namespace({'in_feats' : feats[i-1],
+            delgcn_args = u.Namespace({'in_feats' : feats[i-1],
                                      'out_feats': feats[i],
-                                     'activation': activation})
+                                     'activation': activation,
+                                     "n_heads":args.n_heads,
+                                     "de_layers":args.de_layers,
+                                     "lgcn_layers":args.lgcn_layers,
+                                     "keep_prob":args.keep_prob,
+                                     })
 
-            devgcn = DELGCNLayer(devgcn_args)
-            #print (i,'devgcn', devgcn)
-            self.devgcn_layers.append(devgcn.to(self.device))
-            self._parameters.extend(list(self.devgcn_layers[-1].parameters()))
+            delgcn = DELGCNLayer(delgcn_args)
+            #print (i,'delgcn', delgcn)
+            self.delgcn_layers.append(delgcn.to(self.device))
+            self._parameters.extend(list(self.delgcn_layers[-1].parameters()))
 
     def parameters(self):
         return self._parameters
@@ -73,7 +78,7 @@ class DELGCN(torch.nn.Module):
     def forward(self,A_list, Nodes_list,nodes_mask_list):
         node_feats= Nodes_list[-1]
 
-        for unit in self.devgcn_layers:
+        for unit in self.delgcn_layers:
             # GECU层是每次都初始化gcn，但保留上一次学习到的嵌入矩阵列表
             # 用上一次学习到的嵌入矩阵列表进行训练
             Nodes_list = unit(A_list,Nodes_list,nodes_mask_list)
@@ -85,7 +90,7 @@ class DELGCN(torch.nn.Module):
         return out
 
 
-class LightGCN(torch.nn.Module):
+class LightGCN(object):
     def __init__(self,n_layers,keep_prob) -> None:
         super().__init__()
         
@@ -95,8 +100,8 @@ class LightGCN(torch.nn.Module):
     def dropout(self, x, keep_prob):
         # 
         size = x.size() 
-        index = x.indices().t()
-        values = x.values() 
+        index = x.coalesce().indices().t()
+        values = x.coalesce().values() 
         
         random_index = torch.rand(len(values)) + keep_prob
         random_index = random_index.int().bool()
@@ -114,7 +119,8 @@ class LightGCN(torch.nn.Module):
         !!! edge_index must be a sparse tensor
         """       
         #   torch.split(all_emb , [self.n_users, self.n_items])
-        embs = [torch.mm(feats,weight_mat)]
+        all_emb = torch.mm(feats,weight_mat)
+        embs = [all_emb]
 
         if self.keep_prob:
 
@@ -151,15 +157,11 @@ class DELGCNLayer(torch.nn.Module):
 
     def forward(self,A_list,node_embs_list,mask_list=None):
 
-        GCN_weights = self.GCN_weights
-        out_seq = []
-        for t,Ahat in enumerate(A_list):
-            node_embs = node_embs_list[t]
+        GCN_weights = torch.stack([self.GCN_weights.data] * len(A_list))
+        
+        GCN_weights = self.evolve_weights(GCN_weights)
 
-            GCN_weights = self.evolve_weights(GCN_weights) 
+        out_seq = [self.lgcn.graph_diffusion(Ahat,node_embs,weight) for Ahat,weight,node_embs in zip(A_list,GCN_weights,node_embs_list)]
 
-            node_embs = self.lgcn(Ahat,GCN_weights,node_embs)
-
-            out_seq.append(node_embs)
 
         return out_seq

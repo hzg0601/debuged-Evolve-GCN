@@ -18,12 +18,9 @@ elliptic_args:
 use_cuda: True
 use_logfile: True # If True save the output in a log file, if False in stdout
 
-model: egcn_o
-           #HELP: gcn,skipgcn,skipfeatsgcn,skipgcn使用加法，skipfeatsgcn使用concat
-           #      gruA
-           #      gruB
-           #      egcn_h
-           #      egcn_o
+model: delgcn
+           #HELP: gcn,skipgcn,skipfeatsgcn,egcn_o,egcn_h,skipgcn使用加法，skipfeatsgcn使用concat
+
 
 task: node_cls  # Help: link_pred, edge_cls or node_cls
 
@@ -83,8 +80,9 @@ gcn_parameters:
   cls_feats_min: 100
   cls_feats_max: 800
 
-  # de_layers: 6
-  # lgcn_layers: 3
-  # keep_prob: 0.95
+  de_layers: 6
+  lgcn_layers: 3
+  keep_prob: 0.95
+  n_heads: 4
 comments:
   - comments
