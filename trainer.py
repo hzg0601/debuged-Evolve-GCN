@@ -91,7 +91,7 @@ class Trainer():
 			#? 每次训练后既验证也测试
 			if len(self.splitter.test)>0 and eval_valid==best_eval_valid and e>self.args.eval_after_epochs:
 				eval_test, _ = self.run_epoch(self.splitter.test, e, 'TEST', grad = False)
-				print(f'the test performance is:{eval_test}')
+				print(f'the test performance of current epoch --{e}-- is:{eval_test}')
 
 				if self.args.save_node_embeddings and self.tasker.is_static:
 					self.save_node_embs_csv(nodes_embs, self.splitter.train_idx, log_file+'_train_nodeembs.csv.gz')
@@ -100,7 +100,7 @@ class Trainer():
 				elif self.args.save_node_embeddings and not self.tasker.is_static:
 					node_embs_numpy = nodes_embs.cpu().detach().numpy()
 					pd.DataFrame(node_embs_numpy).to_csv(log_file+f"{self.args.model}_{self.args.data}.csv.gz", header=None, index=None, compression='gzip')
-
+		print(f"the the performance of last training is: {eval_test}")
 	def run_epoch(self, split, epoch, set_name, grad):
 		"""
 		单轮训练方法
