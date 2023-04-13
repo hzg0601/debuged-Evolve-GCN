@@ -80,7 +80,7 @@ gcn_parameters:
   cls_feats_min: 100
   cls_feats_max: 800
 
-  de_layers: 6
+  de_layers: 3
   lgcn_layers: 3
   keep_prob: 0.95
   n_heads: 4
