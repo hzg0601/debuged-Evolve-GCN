@@ -158,11 +158,14 @@ class DELGCNLayer(torch.nn.Module):
         GCN_weights = self.GCN_weights.unsqueeze(0)
         out_seq = []
         for Ahat,node_embs in zip(A_list,node_embs_list):
-            GCN_weights = self.evolve_weights(GCN_weights)
+            temp_weights = self.evolve_weights(GCN_weights)
             
-            new_embs = self.lgcn.graph_diffusion(Ahat,node_embs,GCN_weights[0])
+            new_embs = self.lgcn.graph_diffusion(Ahat,node_embs,temp_weights[-1])
 
             out_seq.append(new_embs)
+
+            GCN_weights = torch.cat([GCN_weights,temp_weights],dim=0)
+
         # GCN_weights = torch.stack([self.GCN_weights.data] * len(A_list))
         
         # GCN_weights = self.evolve_weights(GCN_weights)
@@ -173,10 +176,18 @@ class DELGCNLayer(torch.nn.Module):
         return out_seq
 
 
-##-----v1------------
+##-----v1 一次训练全部------------
 # best valid measure: 0.1764
 # final performance 0.13
 
-# ------v2---------
+# ------v2 逐步训练---------
 # ### w0) ep 83 - Best valid measure:0.18119551681195517
 # the test performance of current epoch --83-- is:0.15649560795191864
+
+## ---one-layer + 逐步训练--------------
+### w0) ep 10 - Best valid measure:0.17204301075268819
+# the test performance of current epoch --10-- is:0.1655860349127182
+
+## --- one-layer + 逐步训练 + 全部历史数据----
+### w0) ep 33 - Best valid measure:0.17591763652641002
+# the test performance of current epoch --33-- is:0.15827093260721578
