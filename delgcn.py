@@ -77,13 +77,12 @@ class DELGCN(torch.nn.Module):
 
     def forward(self,A_list, Nodes_list,nodes_mask_list):
         node_feats= Nodes_list[-1]
+        unit = self.delgcn_layers[0]
+        out = unit(A_list,Nodes_list,nodes_mask_list)[-1]
+        # for unit in self.delgcn_layers:
+        #     Nodes_list = unit(A_list,Nodes_list,nodes_mask_list)
 
-        for unit in self.delgcn_layers:
-            # GECU层是每次都初始化gcn，但保留上一次学习到的嵌入矩阵列表
-            # 用上一次学习到的嵌入矩阵列表进行训练
-            Nodes_list = unit(A_list,Nodes_list,nodes_mask_list)
-
-        out = Nodes_list[-1]
+        # out = Nodes_list[-1]
         # 将学习的特征与原始特征拼接
         if self.skipfeats:
             out = torch.cat((out,node_feats), dim=1)   # use node_feats.to_dense() if 2hot encoded input 
@@ -172,3 +171,12 @@ class DELGCNLayer(torch.nn.Module):
 
 
         return out_seq
+
+
+##-----v1------------
+# best valid measure: 0.1764
+# final performance 0.13
+
+# ------v2---------
+# ### w0) ep 83 - Best valid measure:0.18119551681195517
+# the test performance of current epoch --83-- is:0.15649560795191864
