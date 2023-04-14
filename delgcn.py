@@ -77,13 +77,14 @@ class DELGCN(torch.nn.Module):
 
     def forward(self,A_list, Nodes_list,nodes_mask_list):
         node_feats= Nodes_list[-1]
+        # only one-layer
         unit = self.delgcn_layers[0]
         out = unit(A_list,Nodes_list,nodes_mask_list)[-1]
+        # three-layers
         # for unit in self.delgcn_layers:
         #     Nodes_list = unit(A_list,Nodes_list,nodes_mask_list)
-
         # out = Nodes_list[-1]
-        # 将学习的特征与原始特征拼接
+
         if self.skipfeats:
             out = torch.cat((out,node_feats), dim=1)   # use node_feats.to_dense() if 2hot encoded input 
         return out
@@ -157,37 +158,44 @@ class DELGCNLayer(torch.nn.Module):
     def forward(self,A_list,node_embs_list,mask_list=None):
         GCN_weights = self.GCN_weights.unsqueeze(0)
         out_seq = []
-        for Ahat,node_embs in zip(A_list,node_embs_list):
-            temp_weights = self.evolve_weights(GCN_weights)
+        # # step-by-step
+        # for Ahat,node_embs in zip(A_list,node_embs_list):
+        #     temp_weights = self.evolve_weights(GCN_weights)
             
-            new_embs = self.lgcn.graph_diffusion(Ahat,node_embs,temp_weights[-1])
+        #     new_embs = self.lgcn.graph_diffusion(Ahat,node_embs,temp_weights[-1])
 
-            out_seq.append(new_embs)
+        #     out_seq.append(new_embs)
 
-            GCN_weights = torch.cat([GCN_weights,temp_weights],dim=0)
-
-        # GCN_weights = torch.stack([self.GCN_weights.data] * len(A_list))
+        #     GCN_weights = torch.cat([GCN_weights,temp_weights],dim=0)
+        # # one-shot 
+        GCN_weights = torch.stack([self.GCN_weights.data] * len(A_list))
         
-        # GCN_weights = self.evolve_weights(GCN_weights)
+        GCN_weights = self.evolve_weights(GCN_weights)
 
-        # out_seq = [self.lgcn.graph_diffusion(Ahat,node_embs,weight) for Ahat,weight,node_embs in zip(A_list,GCN_weights,node_embs_list)]
+        out_seq = [self.lgcn.graph_diffusion(Ahat,node_embs,weight) for Ahat,weight,node_embs in zip(A_list,GCN_weights,node_embs_list)]
 
 
         return out_seq
 
 
-##-----v1 一次训练全部------------
+##-----v1 three-layer + 一次训练全部------------
 # best valid measure: 0.1764
 # final performance 0.13
+## ----v1 one-layer + 一次全部训练--------------
 
-# ------v2 逐步训练---------
+
+# ------v2 three-layer 逐步训练+一步数据---------
 # ### w0) ep 83 - Best valid measure:0.18119551681195517
 # the test performance of current epoch --83-- is:0.15649560795191864
 
-## ---one-layer + 逐步训练--------------
+## ---one-layer + 逐步训练+一步数据--------------
 ### w0) ep 10 - Best valid measure:0.17204301075268819
 # the test performance of current epoch --10-- is:0.1655860349127182
 
 ## --- one-layer + 逐步训练 + 全部历史数据----
 ### w0) ep 33 - Best valid measure:0.17591763652641002
 # the test performance of current epoch --33-- is:0.15827093260721578
+
+## ---three-layer+逐步训练+全部历史数据----
+### w0) ep 93 - Best valid measure:0.17941773865944485
+# the test performance of current epoch --93-- is:0.15275096525096526
