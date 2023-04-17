@@ -34,8 +34,8 @@ dev_proportion: 0.1
 
 num_epochs: 500
 steps_accum_gradients: 1
-learning_rate: 0.005 # use None to pick a random number between learning_rate_min and learning_rate_max
-learning_rate_min: 0.0001
+learning_rate: 0.01 # use None to pick a random number between learning_rate_min and learning_rate_max
+learning_rate_min: 0.001
 learning_rate_max: 0.1
 negative_mult_training: 50
 negative_mult_test: 100
@@ -43,7 +43,7 @@ smart_neg_sampling: True
 seed: 1234
 target_measure: F1 # measure to define the best epoch F1, Precision, Recall, MRR, MAP
 target_class: 1 # Target class to get the measure to define the best epoch (all, 0, 1)
-early_stop_patience: 50
+early_stop_patience: 80
 
 
 eval_after_epochs: 5 # Epoch for the first validation (avoid the first epochs to save time)

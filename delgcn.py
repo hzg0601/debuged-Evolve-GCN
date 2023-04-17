@@ -58,6 +58,7 @@ class DELGCN(torch.nn.Module):
         self._parameters = nn.ParameterList()
         # 似乎只有3层
         for i in range(1,len(feats)):
+
             delgcn_args = u.Namespace({'in_feats' : feats[i-1],
                                      'out_feats': feats[i],
                                      'activation': activation,
@@ -147,8 +148,9 @@ class DELGCNLayer(torch.nn.Module):
         self.evolve_weights = nn.TransformerEncoder(encoder_layer,num_layers=self.args.de_layers)
         self.lgcn = LightGCN(n_layers=self.args.lgcn_layers,keep_prob=self.args.keep_prob)
         self.activation = self.args.activation
-        self.GCN_weights = Parameter(torch.Tensor(self.args.in_feats,self.args.out_feats))
-        self.reset_param(self.GCN_weights)
+        # self.GCN_weights = Parameter(torch.Tensor(self.args.in_feats,self.args.out_feats))
+        # self.reset_param(self.GCN_weights)
+        self.GCN_weights = torch.randn(self.args.in_feats,self.args.out_feats)
 
     def reset_param(self,t):
         #Initialize based on the number of columns
@@ -204,3 +206,5 @@ class DELGCNLayer(torch.nn.Module):
 ## ---three-layer+逐步训练+全部历史数据----
 ### w0) ep 93 - Best valid measure:0.17941773865944485
 # the test performance of current epoch --93-- is:0.15275096525096526
+
+## ---one-layer+逐步训练+一次历史数据+固定gcn参数---------
