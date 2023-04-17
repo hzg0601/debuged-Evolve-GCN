@@ -77,10 +77,10 @@ class DELGCN(torch.nn.Module):
 
     def forward(self,A_list, Nodes_list,nodes_mask_list):
         node_feats= Nodes_list[-1]
-        # only one-layer
+        # # only one-layer
         unit = self.delgcn_layers[0]
         out = unit(A_list,Nodes_list,nodes_mask_list)[-1]
-        # three-layers
+        # # # #three-layers
         # for unit in self.delgcn_layers:
         #     Nodes_list = unit(A_list,Nodes_list,nodes_mask_list)
         # out = Nodes_list[-1]
@@ -158,21 +158,24 @@ class DELGCNLayer(torch.nn.Module):
     def forward(self,A_list,node_embs_list,mask_list=None):
         GCN_weights = self.GCN_weights.unsqueeze(0)
         out_seq = []
-        # # step-by-step
-        # for Ahat,node_embs in zip(A_list,node_embs_list):
-        #     temp_weights = self.evolve_weights(GCN_weights)
+        # step-by-step
+        for Ahat,node_embs in zip(A_list,node_embs_list):
+            GCN_weights = self.evolve_weights(GCN_weights)
+            node_embs = self.lgcn.graph_diffusion(Ahat,node_embs,GCN_weights[-1])
+            out_seq.append(node_embs)
+            # temp_weights = self.evolve_weights(GCN_weights)
             
-        #     new_embs = self.lgcn.graph_diffusion(Ahat,node_embs,temp_weights[-1])
+            # new_embs = self.lgcn.graph_diffusion(Ahat,node_embs,temp_weights[-1])
 
-        #     out_seq.append(new_embs)
+            # out_seq.append(new_embs)
 
-        #     GCN_weights = torch.cat([GCN_weights,temp_weights],dim=0)
-        # # one-shot 
-        GCN_weights = torch.stack([self.GCN_weights.data] * len(A_list))
+            # GCN_weights = torch.cat([GCN_weights,temp_weights],dim=0)
+        # # # one-shot 
+        # GCN_weights = torch.stack([self.GCN_weights.data] * len(A_list))
         
-        GCN_weights = self.evolve_weights(GCN_weights)
+        # GCN_weights = self.evolve_weights(GCN_weights)
 
-        out_seq = [self.lgcn.graph_diffusion(Ahat,node_embs,weight) for Ahat,weight,node_embs in zip(A_list,GCN_weights,node_embs_list)]
+        # out_seq = [self.lgcn.graph_diffusion(Ahat,node_embs,weight) for Ahat,weight,node_embs in zip(A_list,GCN_weights,node_embs_list)]
 
 
         return out_seq
@@ -181,8 +184,10 @@ class DELGCNLayer(torch.nn.Module):
 ##-----v1 three-layer + 一次训练全部------------
 # best valid measure: 0.1764
 # final performance 0.13
-## ----v1 one-layer + 一次全部训练--------------
 
+## ----v1 one-layer + 一次全部训练--------------
+### w0) ep 68 - Best valid measure:0.17380904923260915
+#the test performance of current epoch --68-- is:0.1595144469140024
 
 # ------v2 three-layer 逐步训练+一步数据---------
 # ### w0) ep 83 - Best valid measure:0.18119551681195517
