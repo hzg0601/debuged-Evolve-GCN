@@ -66,6 +66,7 @@ class DELGCN(torch.nn.Module):
                                      "de_layers":args.de_layers,
                                      "lgcn_layers":args.lgcn_layers,
                                      "keep_prob":args.keep_prob,
+                                     "device": device
                                      })
 
             delgcn = DELGCNLayer(delgcn_args)
@@ -150,7 +151,7 @@ class DELGCNLayer(torch.nn.Module):
         self.activation = self.args.activation
         # self.GCN_weights = Parameter(torch.Tensor(self.args.in_feats,self.args.out_feats))
         # self.reset_param(self.GCN_weights)
-        self.GCN_weights = torch.randn(self.args.in_feats,self.args.out_feats)
+        self.GCN_weights = torch.randn(self.args.in_feats,self.args.out_feats).to(args.device)
 
     def reset_param(self,t):
         #Initialize based on the number of columns
@@ -158,13 +159,16 @@ class DELGCNLayer(torch.nn.Module):
         t.data.uniform_(-stdv,stdv)
 
     def forward(self,A_list,node_embs_list,mask_list=None):
-        GCN_weights = self.GCN_weights.unsqueeze(0)
-        out_seq = []
-        # step-by-step
-        for Ahat,node_embs in zip(A_list,node_embs_list):
-            GCN_weights = self.evolve_weights(GCN_weights)
-            node_embs = self.lgcn.graph_diffusion(Ahat,node_embs,GCN_weights[-1])
-            out_seq.append(node_embs)
+
+        # # step-by-step
+        # out_seq = []
+        # GCN_weights = self.GCN_weights.unsqueeze(0)
+        # for Ahat,node_embs in zip(A_list,node_embs_list):
+        #     # #one-step history data
+        #     GCN_weights = self.evolve_weights(GCN_weights)
+        #     node_embs = self.lgcn.graph_diffusion(Ahat,node_embs,GCN_weights[-1])
+        #     out_seq.append(node_embs)
+            # #all history data
             # temp_weights = self.evolve_weights(GCN_weights)
             
             # new_embs = self.lgcn.graph_diffusion(Ahat,node_embs,temp_weights[-1])
@@ -173,11 +177,11 @@ class DELGCNLayer(torch.nn.Module):
 
             # GCN_weights = torch.cat([GCN_weights,temp_weights],dim=0)
         # # # one-shot 
-        # GCN_weights = torch.stack([self.GCN_weights.data] * len(A_list))
+        GCN_weights = torch.stack([self.GCN_weights] * len(A_list))
         
-        # GCN_weights = self.evolve_weights(GCN_weights)
+        GCN_weights = self.evolve_weights(GCN_weights)
 
-        # out_seq = [self.lgcn.graph_diffusion(Ahat,node_embs,weight) for Ahat,weight,node_embs in zip(A_list,GCN_weights,node_embs_list)]
+        out_seq = [self.lgcn.graph_diffusion(Ahat,node_embs,weight) for Ahat,weight,node_embs in zip(A_list,GCN_weights,node_embs_list)]
 
 
         return out_seq
@@ -208,3 +212,8 @@ class DELGCNLayer(torch.nn.Module):
 # the test performance of current epoch --93-- is:0.15275096525096526
 
 ## ---one-layer+逐步训练+一次历史数据+固定gcn参数---------
+### w0) ep 104 - Best valid measure:0.1744561705793668
+# the test performance of current epoch --104-- is:0.15837937384898712
+## ---one-layer+一次训练+固定gcn参数----
+### w0) ep 35 - Best valid measure:0.17445054945054944
+# the test performance of current epoch --35-- is:0.15962277331470487
