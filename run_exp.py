@@ -208,7 +208,7 @@ if __name__ == '__main__':
 	args.use_cuda = (torch.cuda.is_available() and args.use_cuda)
 	args.device='cpu'
 	if args.use_cuda:
-		args.device='cuda:1' # 在此选择用哪一个GPU,cuda表示cuda:0
+		args.device='cuda:0' # 在此选择用哪一个GPU,cuda表示cuda:0
 	print ("use CUDA:", args.use_cuda, "- device:", args.device)
 	try:
 		# torch.distributed支持GLOO，NCLL和MPI三种后端

@@ -43,7 +43,7 @@ smart_neg_sampling: True
 seed: 1234
 target_measure: F1 # measure to define the best epoch F1, Precision, Recall, MRR, MAP
 target_class: 1 # Target class to get the measure to define the best epoch (all, 0, 1)
-early_stop_patience: 80
+early_stop_patience: 50
 
 
 eval_after_epochs: 5 # Epoch for the first validation (avoid the first epochs to save time)
