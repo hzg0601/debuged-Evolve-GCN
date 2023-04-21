@@ -200,8 +200,8 @@ class DELGCNLayer(torch.nn.Module):
 # the test performance of current epoch --83-- is:0.15649560795191864
 
 ## ---one-layer + 逐步训练+一步数据--------------
-### w0) ep 10 - Best valid measure:0.17204301075268819
-# the test performance of current epoch --10-- is:0.1655860349127182
+### w0) ep 104 - Best valid measure:0.1744561705793668
+# the test performance of current epoch --104-- is:0.15837937384898712#
 
 ## --- one-layer + 逐步训练 + 全部历史数据----
 ### w0) ep 33 - Best valid measure:0.17591763652641002
