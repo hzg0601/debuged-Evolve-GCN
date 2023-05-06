@@ -86,3 +86,8 @@ gcn_parameters:
   n_heads: 4
 comments:
   - comments
+
+ml_args:
+  model: rf # dt:decisontree, rf:randomforest, mlp, lr:logisticregression
+  feature: AF # AF, LF, NE, AF+NE, LF+NE
+  ne: egcn_h # egcn_h, egcn_o, skipfeatsgcn,gcn, skipgcn
