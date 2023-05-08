@@ -19,7 +19,7 @@ class splitter():
             #only the training one requires special handling on start, the others are fine with the split IDX.
             
             random_perm=False
-            indexes = tasker.data.nodes_with_label
+            indexes = tasker.data.nodes_labels_times[:,0] #只取indexes
             
             if random_perm:
                 perm_idx = torch.randperm(indexes.size(0))

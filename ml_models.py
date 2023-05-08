@@ -25,23 +25,23 @@ log_file = './embs/'
 # parser.add_argument("--feature",type=str,default="AF+NE",choices=["AF","LF","NE","AF+NE","LF+NE"])
 
 
-class MLP(nn.Module):
-    def __init__(self,
-    out_dim=2,
-    hid_dim=100):
-        super().__init__()
+# class MLP(nn.Module):
+#     def __init__(self,
+#     out_dim=2,
+#     hid_dim=100):
+#         super().__init__()
 
-        self.hid_dim = hid_dim
-        self.activate = torch.relu
-        self.linear2 = nn.Linear(hid_dim,out_dim)
+#         self.hid_dim = hid_dim
+#         self.activate = torch.relu
+#         self.linear2 = nn.Linear(hid_dim,out_dim)
 
-    def forward(self,inputs):
+#     def forward(self,inputs):
 
-        in_dim = inputs.shape[-1]
-        self.linear1 = nn.Linear(in_dim,self.hid_dim)
-        logit = self.linear2(self.activate(self.linear1(inputs)))
-        result = torch.argmax(logit)
-        return result
+#         in_dim = inputs.shape[-1]
+#         self.linear1 = nn.Linear(in_dim,self.hid_dim)
+#         logit = self.linear2(self.activate(self.linear1(inputs)))
+#         result = torch.argmax(logit)
+#         return result
 
 
 dt = DecisionTreeClassifier()
@@ -68,10 +68,10 @@ def main():
 	#build the splitter
     splitter = sp.splitter(args,tasker)
 
-    assert args.ml_args.model in ["dt","rf","lr","mlp"], "undefined machine learning model"
-    assert args.ml_args.feature in ["AF","LF","NE","AF+NE","LF+NE"],"unsupported features"
+    assert args.ml_args["model"] in ["dt","rf","lr","mlp"], "undefined machine learning model"
+    assert args.ml_args["feature"] in ["AF","LF","NE","AF+NE","LF+NE"],"unsupported features"
     
-    model = eval(args.ml_args.model)
+    model = eval(args.ml_args["model"])
 
     train = list(splitter.train)[0].numpy() # train,dev,test are DataLoaders with only 1 batch
     dev  = list(splitter.dev)[0].numpy()
@@ -81,18 +81,18 @@ def main():
     test_idx = splitter.test_idx.numpy()
 
     # 如果使用LF即local feature则取前94个
-    if "LF" in args.ml_args.feature:
+    if "LF" in args.ml_args["feature"]:
         train,dev,test = train[:,:94],dev[:,:94], test[:,:94]
     # 如果使用网络嵌入特征
-    if "NE" in args.ml_args.feature:
-        assert args.ml_args.ne in ["egcn_h", "egcn_o", "skipfeatsgcn","gcn", "skipgcn"], "unsupported nework embedding features"
+    if "NE" in args.ml_args["feature"]:
+        assert args.ml_args['ne'] in ["egcn_h", "egcn_o", "skipfeatsgcn","gcn", "skipgcn"], "unsupported nework embedding features"
         file_name = log_file + [re.search(f"^{args.ml_args.ne}",file) for file in os.listdir(log_file)][0]
         ne = pd.read_csv(file_name,compression="gzip").to_numpy()
         train_ne = ne[train_idx]
         dev_ne = ne[dev_idx]
         test_ne = ne[test_idx]
         # skipfeatsgcn包含了原始特征
-        if  args.ml_args.feature == "NE" or args.ml_args.ne == "skipfeatsgcn":
+        if  args.ml_args["feature"] == "NE" or args.ml_args['ne'] == "skipfeatsgcn":
             train,dev,test = train_ne, dev_ne, test_ne
         # 如果只使用嵌入或ne为skipfeatsgcn的嵌入向量，则将ne的值作为特征，否则将ne的结果与原始特征合并
         else:
@@ -109,7 +109,7 @@ def main():
     model.fit(train_feat,train_label)
     print("training done,start to eval...")
     result = model.predict(test)
-    f1,recall,precision = f1_score(result,test_label), recall_score(result,test_label),precision(result,test_label)
+    f1,recall,precision = f1_score(result,test_label), recall_score(result,test_label),precision_score(result,test_label)
     print("eval done.")
 
     print(f"""

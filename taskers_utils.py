@@ -166,11 +166,8 @@ def get_static_sp_adj(edges,weighted):
     """
     构造静态稀疏邻接矩阵
     """
-    idx = edges['idx'] #* edges['idx']包括source,target,time,label四列
-    #subset = idx[:,ECOLS.time] <= time
-    #subset = subset * (idx[:,ECOLS.time] > (time - time_window))
+    idx = edges['idx'][:,:2] #* edges['idx']包括source,target,time,但构造静态邻接矩阵仅需要前三列
 
-    #idx = edges['idx'][subset][:,[ECOLS.source, ECOLS.target]]  
     if weighted:
         vals = edges['vals']# * [subset]
     else:

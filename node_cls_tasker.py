@@ -165,7 +165,7 @@ class Static_Node_Cls_Tasker(Node_Cls_Tasker):
 
 		else:
 			self.feats_per_node = dataset.feats_per_node
-			self.nodes_feats = self.data.node_feats
+			self.nodes_feats = self.data.nodes_feats
 
 		self.adj_matrix = tu.normalize_adj(adj = self.adj_matrix, num_nodes = self.data.num_nodes)
 		self.is_static = True
@@ -173,12 +173,12 @@ class Static_Node_Cls_Tasker(Node_Cls_Tasker):
 	def get_sample(self,idx,test):
 		#print ('self.adj_matrix',self.adj_matrix.size())
 		idx=int(idx)
-		#node_feats = self.data.node_feats_dict[idx]
+		#node_feats = self.data.nodes_feats_dict[idx]
 		label = self.data.nodes_labels[idx]
 
 
 		return {'idx': idx,
-				#'node_feats': self.data.node_feats,
+				#'node_feats': self.data.nodes_feats,
 				#'adj': self.adj_matrix,
 				'label': label
 				}
