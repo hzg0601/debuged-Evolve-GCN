@@ -28,7 +28,7 @@ class Trainer():
 		self.logger = logger.Logger(args, self.num_classes)
 
 		self.init_optimizers(args)
-
+		#* 对于静态任务，以全部历史数据的adj为adj,以全部节点特征为特征
 		if self.tasker.is_static:
 			adj_matrix = u.sparse_prepare_tensor(self.tasker.adj_matrix, torch_size = [self.num_nodes], ignore_batch_dim = False)
 			self.hist_adj_list = [adj_matrix]
@@ -117,18 +117,22 @@ class Trainer():
 		torch.cuda.empty_cache()
 		torch.set_grad_enabled(grad)
 		#* 训练是逐步回归的，每次增加一个时间步，加载该时间点之前的全部历史数据
-		for s in split:
+		
+		for counter,s in enumerate(split):
+			print(f"current counter is: {counter}")
 			if self.tasker.is_static:
 				s = self.prepare_static_sample(s)
+				# predictions,nodes_embs = self.predict(s.adj,s.nodes_feats,s.label_sp['idx'],None)
+				# loss = self.comp_loss(predictions,s.label_sp['vals'])
 			else:
 				s = self.prepare_sample(s)
 
-			predictions, nodes_embs = self.predict(s.hist_adj_list,
-												   s.hist_ndFeats_list, #? 时变属性
-												   s.label_sp['idx'],
-												   s.node_mask_list)
+				predictions, nodes_embs = self.predict(s.hist_adj_list,
+													s.hist_ndFeats_list, #? 时变属性
+													s.label_sp['idx'],
+													s.node_mask_list)
 
-			loss = self.comp_loss(predictions,s.label_sp['vals'])
+				loss = self.comp_loss(predictions,s.label_sp['vals'])
 			# print(loss)
 			if set_name in ['TEST', 'VALID'] and self.args.task == 'link_pred':
 				self.logger.log_minibatch(predictions, s.label_sp['vals'], loss.detach(), adj = s.label_sp['idx'])
@@ -156,8 +160,7 @@ class Trainer():
 
 		predict_batch_size = 100000
 		gather_predictions=[]
-		# 预测是分批进行的，
-		# 毫无意义
+		# 分批进行预测，但应该没有实际效果
 		for i in range(1 +(node_indices.size(1)//predict_batch_size)):
 			cls_input = self.gather_node_embs(nodes_embs, node_indices[:, i*predict_batch_size:(i+1)*predict_batch_size])
 			predictions = self.classifier(cls_input)
@@ -226,10 +229,10 @@ class Trainer():
 		sample.hist_ndFeats_list = self.hist_ndFeats_list
 
 		label_sp = {}
-		label_sp['idx'] =  [sample.idx]
+		label_sp['idx'] =  sample.idx
 		label_sp['vals'] = sample.label
 		sample.label_sp = label_sp
-
+		sample.node_mask_list = None 
 		return sample
 
 	def ignore_batch_dim(self,adj):

@@ -15,14 +15,13 @@ elliptic_args:
   times_file: elliptic_txs_nodetime.csv
   aggr_time: 1
 
-use_cuda: True
+use_cuda: False
 use_logfile: True # If True save the output in a log file, if False in stdout
-
+#HELP: gcn,skipgcn,skipfeatsgcn,egcn_o,egcn_h,skipgcn使用加法，skipfeatsgcn使用concat
 model: gcn
-           #HELP: gcn,skipgcn,skipfeatsgcn,egcn_o,egcn_h,skipgcn使用加法，skipfeatsgcn使用concat
 
-
-task: static_node_cls  # Help: link_pred, edge_cls or node_cls
+# Help: link_pred, edge_cls or node_cls
+task: static_node_cls
 
 class_weights: [ 0.1, 0.9]
 use_2_hot_node_feats: False
@@ -55,7 +54,7 @@ num_hist_steps_min: 3 # only used if num_hist_steps: None
 num_hist_steps_max: 10 # only used if num_hist_steps: None
 
 data_loading_params:
-  batch_size: 1  # should be always 1
+  batch_size: 1  # should be always 1 for temporal tasker, 100000 for static tasker
   num_workers: 8
 
 gcn_parameters:

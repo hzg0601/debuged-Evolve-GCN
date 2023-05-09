@@ -6,6 +6,44 @@ import utils as u
 1. 获取给定时间点前的历史节点特征列表、邻接矩阵列表、标签列表，
 将时间点、节点特征列表、邻接矩阵列表、标签列表组成一个字典；
 2. 需注意，在节点分类任务中只有两个类
+
+接受的输入为:args,即yaml文件的参数;dataset，各数据处理类的数据类，针对ellptic_temporal_dl包括以下属性：
+nodes: 由原始数据读入文件的数据，第一列为ID，第列以后为特征
+nodes_feats: 节点的固有属性
+nodes_labels_times: 具有标签的节点的ID、标签、时间点
+edges: 交易记录，为一个dict,data字段格式为target,source,time，vals字段：torch.ones
+max_time
+min_time
+num_nodes
+feats_per_node
+
+
+Node_Cls_Tasker: 组装的具有时序顺序的回归任务类
+主方法为:
+get_sample:根据给定的id返回样本，为一个dict,包括id,历史的adj,node_feats,label,mask
+其他方法包括get_node_feats：根据使用特征类型返回特征的原始格式,
+prepare_node_feat:如果使用节点度特征,则返回稀疏矩阵；否则返回节点原始特征
+get_node_label：节点标签
+属性包括：
+data：全部样本集
+args:
+num_classes：2
+feats_per_nodes
+nodes_labels_times:
+is_static:False
+
+Static_Node_Cls_Tasker: 组装的静态的回归任务类
+其主方法为:
+get_sample:根据给定的id返回样本，为一个dict,包括id,adj,node_feats,label,mask=None
+
+属性包括：
+data：全部样本集
+args:
+num_classes：2
+adj_matrix:
+feats_per_nodes：
+nodes_feats:
+is_static:True
 """
 class Node_Cls_Tasker():
 	def __init__(self,args,dataset):
@@ -171,15 +209,16 @@ class Static_Node_Cls_Tasker(Node_Cls_Tasker):
 		self.is_static = True
 
 	def get_sample(self,idx,test):
+		# 使用全部数据作为一个批次，
 		#print ('self.adj_matrix',self.adj_matrix.size())
-		idx=int(idx)
-		#node_feats = self.data.nodes_feats_dict[idx]
-		label = self.data.nodes_labels[idx]
+		# print(idx.shape)
+		idx_ori = self.data.nodes_labels_times[idx,0]
+		# nodes_feats = self.data.nodes_feats[idx_ori,:]
+		label = self.data.nodes_labels_times[idx,1] # [:,[0,1,2]]依次是id,label,time
 
-
-		return {'idx': idx,
-				#'node_feats': self.data.nodes_feats,
-				#'adj': self.adj_matrix,
+		return {'idx': idx_ori,
+				# 'nodes_feats': nodes_feats,
+				# 'adj': self.adj_matrix,
 				'label': label
 				}
 

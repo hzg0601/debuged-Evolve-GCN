@@ -11,6 +11,16 @@ import numpy as np
 注意该数据集删除了unknown标签;
 即对于图使用全部数据进行训练，但仅对0，1标签进行预测和验证;
 node_time数据的顺序为target,source,time;
+
+该数据集包含如下属性：
+nodes: 由原始数据读入文件的数据，第一列为ID，第2列为time,以后为固有特征
+nodes_feats: 节点的固有属性
+nodes_labels_times: 具有标签的节点的ID、标签、时间点
+edges: 交易记录，为一个dict,data字段格式为target,source,time，vals字段：torch.ones
+max_time
+min_time
+num_nodes
+feats_per_node
 """
 
 class Elliptic_Temporal_Dataset():
