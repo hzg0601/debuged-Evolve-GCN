@@ -67,7 +67,7 @@ class splitter():
             self.train_idx = perm_idx[:int(args.train_proportion*perm_idx.size(0))]
             self.dev_idx = perm_idx[int(args.train_proportion*perm_idx.size(0)): int((args.train_proportion+args.dev_proportion)*perm_idx.size(0))]
             self.test_idx = perm_idx[int((args.train_proportion+args.dev_proportion)*perm_idx.size(0)):]
-            # print ('train,dev,test',self.train_idx.size(), self.dev_idx.size(), self.test_idx.size())
+            print ('train,dev,test',self.train_idx.size(), self.dev_idx.size(), self.test_idx.size())
             
             train = static_data_split(tasker, self.train_idx, test = False)
            

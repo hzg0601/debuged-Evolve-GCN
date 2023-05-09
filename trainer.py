@@ -94,9 +94,9 @@ class Trainer():
 				print(f'the test performance of current epoch --{e}-- is:{eval_test}')
 
 				if self.args.save_node_embeddings and self.tasker.is_static:
-					self.save_node_embs_csv(nodes_embs, self.splitter.train_idx, log_file+'_train_nodeembs.csv.gz')
-					self.save_node_embs_csv(nodes_embs, self.splitter.dev_idx, log_file+'_valid_nodeembs.csv.gz')
-					self.save_node_embs_csv(nodes_embs, self.splitter.test_idx, log_file+'_test_nodeembs.csv.gz')
+					self.save_node_embs_csv(nodes_embs, self.splitter.train_idx, log_file+f'{self.args.model}_{self.args.data}_train_nodeembs.csv.gz')
+					self.save_node_embs_csv(nodes_embs, self.splitter.dev_idx, log_file+f'{self.args.model}_{self.args.data}_valid_nodeembs.csv.gz')
+					self.save_node_embs_csv(nodes_embs, self.splitter.test_idx, log_file+f'{self.args.model}_{self.args.data}_test_nodeembs.csv.gz')
 				elif self.args.save_node_embeddings and not self.tasker.is_static:
 					node_embs_numpy = nodes_embs.cpu().detach().numpy()
 					pd.DataFrame(node_embs_numpy).to_csv(log_file+f"{self.args.model}_{self.args.data}.csv.gz", header=None, index=None, compression='gzip')
@@ -119,7 +119,7 @@ class Trainer():
 		#* 训练是逐步回归的，每次增加一个时间步，加载该时间点之前的全部历史数据
 		
 		for counter,s in enumerate(split):
-			print(f"current counter is: {counter}")
+			# print(f"current counter is: {counter}")
 			if self.tasker.is_static:
 				s = self.prepare_static_sample(s)
 				# predictions,nodes_embs = self.predict(s.adj,s.nodes_feats,s.label_sp['idx'],None)
@@ -229,7 +229,7 @@ class Trainer():
 		sample.hist_ndFeats_list = self.hist_ndFeats_list
 
 		label_sp = {}
-		label_sp['idx'] =  sample.idx
+		label_sp['idx'] =  sample.idx.unsqueeze(0)
 		label_sp['vals'] = sample.label
 		sample.label_sp = label_sp
 		sample.node_mask_list = None 
@@ -244,7 +244,7 @@ class Trainer():
 	def save_node_embs_csv(self, nodes_embs, indexes, file_name):
 		csv_node_embs = []
 		for node_id in indexes:
-			orig_ID = torch.DoubleTensor([self.tasker.data.contID_to_origID[node_id]])
+			orig_ID = torch.DoubleTensor([self.tasker.data.nodes[:,0][node_id]])
 
 			csv_node_embs.append(torch.cat((orig_ID,nodes_embs[node_id].double())).detach().numpy())
 
