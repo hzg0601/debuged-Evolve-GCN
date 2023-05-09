@@ -127,12 +127,12 @@ class Trainer():
 			else:
 				s = self.prepare_sample(s)
 
-				predictions, nodes_embs = self.predict(s.hist_adj_list,
-													s.hist_ndFeats_list, #? 时变属性
-													s.label_sp['idx'],
-													s.node_mask_list)
+			predictions, nodes_embs = self.predict(s.hist_adj_list,
+												s.hist_ndFeats_list, #? 时变属性
+												s.label_sp['idx'],
+												s.node_mask_list)
 
-				loss = self.comp_loss(predictions,s.label_sp['vals'])
+			loss = self.comp_loss(predictions,s.label_sp['vals'])
 			# print(loss)
 			if set_name in ['TEST', 'VALID'] and self.args.task == 'link_pred':
 				self.logger.log_minibatch(predictions, s.label_sp['vals'], loss.detach(), adj = s.label_sp['idx'])

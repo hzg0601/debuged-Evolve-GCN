@@ -18,10 +18,10 @@ elliptic_args:
 use_cuda: False
 use_logfile: True # If True save the output in a log file, if False in stdout
 #HELP: gcn,skipgcn,skipfeatsgcn,egcn_o,egcn_h,skipgcn使用加法，skipfeatsgcn使用concat
-model: gcn
+model: egcn_o
 
 # Help: link_pred, edge_cls or node_cls
-task: static_node_cls
+task: node_cls
 
 class_weights: [ 0.1, 0.9]
 use_2_hot_node_feats: False
