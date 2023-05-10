@@ -110,7 +110,7 @@ class Trainer():
 
 					file_name = log_file+f'{self.args.model}_{self.args.data}.csv.gz'
 
-					csv_node_embs = torch.cat([indexes.unsqueeze(1),nodes_embs[indexes].cpu().detach()],dim=1).numpy
+					csv_node_embs = torch.cat([indexes.unsqueeze(1),nodes_embs[indexes].cpu().detach()],dim=1).numpy()
 
 					pd.DataFrame(np.array(csv_node_embs)).to_csv(file_name, header=None, index=None, compression='gzip')
 		print(f"the the performance of last training is: {eval_test}")
