@@ -93,13 +93,26 @@ class Trainer():
 				eval_test, _ = self.run_epoch(self.splitter.test, e, 'TEST', grad = False)
 				print(f'the test performance of current epoch --{e}-- is:{eval_test}')
 
-				if self.args.save_node_embeddings and self.tasker.is_static:
-					self.save_node_embs_csv(nodes_embs, self.splitter.train_idx, log_file+f'{self.args.model}_{self.args.data}_train_nodeembs.csv.gz')
-					self.save_node_embs_csv(nodes_embs, self.splitter.dev_idx, log_file+f'{self.args.model}_{self.args.data}_valid_nodeembs.csv.gz')
-					self.save_node_embs_csv(nodes_embs, self.splitter.test_idx, log_file+f'{self.args.model}_{self.args.data}_test_nodeembs.csv.gz')
-				elif self.args.save_node_embeddings and not self.tasker.is_static:
-					node_embs_numpy = nodes_embs.cpu().detach().numpy()
-					pd.DataFrame(node_embs_numpy).to_csv(log_file+f"{self.args.model}_{self.args.data}.csv.gz", header=None, index=None, compression='gzip')
+				# if self.args.save_node_embeddings and self.tasker.is_static:
+				# 	indexes = torch.cat([self.splitter.train_idx,self.splitter.dev_idx,self.splitter.test_idx])
+					
+				# 	# self.save_node_embs_csv(nodes_embs, self.splitter.dev_idx, log_file+f'{self.args.model}_{self.args.data}_valid_nodeembs.csv.gz')
+				# 	# self.save_node_embs_csv(nodes_embs, self.splitter.test_idx, log_file+f'{self.args.model}_{self.args.data}_test_nodeembs.csv.gz')
+				# # 只保留有标签的节点
+				# elif self.args.save_node_embeddings and not self.tasker.is_static:
+				# 	indexes = self.data.nodes_labels_times[:,0]
+				# 	# node_embs_numpy = nodes_embs.cpu().detach().numpy()[indexes]
+				# 	# node_embs_numpy = np.concatenate((indexes,node_embs_numpy),axis=1)
+				# 	# pd.DataFrame(node_embs_numpy).to_csv(log_file+f"{self.args.model}_{self.args.data}.csv.gz", header=None, index=None, compression='gzip')
+
+				if self.args.save_node_embeddings:
+					indexes = self.data.nodes_labels_times[:,0]
+
+					file_name = log_file+f'{self.args.model}_{self.args.data}.csv.gz'
+
+					csv_node_embs = torch.cat([indexes.unsqueeze(1),nodes_embs[indexes].cpu().detach()],dim=1).numpy
+
+					pd.DataFrame(np.array(csv_node_embs)).to_csv(file_name, header=None, index=None, compression='gzip')
 		print(f"the the performance of last training is: {eval_test}")
 	def run_epoch(self, split, epoch, set_name, grad):
 		"""
@@ -117,7 +130,6 @@ class Trainer():
 		torch.cuda.empty_cache()
 		torch.set_grad_enabled(grad)
 		#* 训练是逐步回归的，每次增加一个时间步，加载该时间点之前的全部历史数据
-		
 		for counter,s in enumerate(split):
 			# print(f"current counter is: {counter}")
 			if self.tasker.is_static:
@@ -242,7 +254,8 @@ class Trainer():
 		return adj
 
 	def save_node_embs_csv(self, nodes_embs, indexes, file_name):
-		csv_node_embs = []
+		csv_node_embs = torch.cat([indexes.unsqueeze(1),nodes_embs[indexes]],dim=1)
+		
 		for node_id in indexes:
 			orig_ID = torch.DoubleTensor([self.tasker.data.nodes[:,0][node_id]])
 

@@ -60,56 +60,49 @@ def main():
     args = build_random_hyper_params(args)
     if args.task != "static_node_cls":
         args.task = 'static_node_cls'
-	#build the dataset
+        #build the dataset
     dataset = build_dataset(args)
-	#build the tasker
-    tasker = build_tasker(args,dataset)
-    tasker.is_static = True
-	#build the splitter
-    splitter = sp.splitter(args,tasker)
+    indexes,labels = dataset.nodes_labels_times[:,0].numpy(), dataset.nodes_labels_times[:,1].numpy()
+
+    nodes_feats = dataset.nodes_feats[indexes].numpy()
+
 
     assert args.ml_args["model"] in ["dt","rf","lr","mlp"], "undefined machine learning model"
     assert args.ml_args["feature"] in ["AF","LF","NE","AF+NE","LF+NE"],"unsupported features"
     
     model = eval(args.ml_args["model"])
+    if "AF" in args.ml_args["features"]:
+        nodes_feats = nodes_feats[:,:94]
 
-    train = list(splitter.train)[0].numpy() # train,dev,test are DataLoaders with only 1 batch
-    dev  = list(splitter.dev)[0].numpy()
-    test  = list(splitter.test)[0].numpy()
-    train_idx = splitter.train_idx.numpy()
-    dev_idx = splitter.dev_idx.numpy()
-    test_idx = splitter.test_idx.numpy()
-
-    # 如果使用LF即local feature则取前94个
-    if "LF" in args.ml_args["feature"]:
-        train,dev,test = train[:,:94],dev[:,:94], test[:,:94]
     # 如果使用网络嵌入特征
     if "NE" in args.ml_args["feature"]:
-        assert args.ml_args['ne'] in ["egcn_h", "egcn_o", "skipfeatsgcn","gcn", "skipgcn"], "unsupported nework embedding features"
-        file_name = log_file + [re.search(f"^{args.ml_args.ne}",file) for file in os.listdir(log_file)][0]
-        ne = pd.read_csv(file_name,compression="gzip").to_numpy()
-        train_ne = ne[train_idx]
-        dev_ne = ne[dev_idx]
-        test_ne = ne[test_idx]
+        assert args.ml_args['ne'] in ["egcn_h", "egcn_o", "skipfeatsgcn","gcn", "skipgcn","delgcn"], "unsupported nework embedding features"
+        file_re = f"^{args.ml_args['ne']}.*{args.data}\.csv\.gz$"
+        file_name = log_file + [re.search(file_re,file) for file in os.listdir(log_file)][0]
+        ne = pd.read_csv(file_name,header=None, index=None, compression='gzip').to_numpy()[:,1:]
+        
         # skipfeatsgcn包含了原始特征
         if  args.ml_args["feature"] == "NE" or args.ml_args['ne'] == "skipfeatsgcn":
-            train,dev,test = train_ne, dev_ne, test_ne
-        # 如果只使用嵌入或ne为skipfeatsgcn的嵌入向量，则将ne的值作为特征，否则将ne的结果与原始特征合并
+            features = ne
         else:
-            train = np.concatenate([train,train_ne],axis=1)
-            dev = np.concatenate([dev,dev_ne],axis=1)
-            test = np.concatenate([test,test_ne],axis=1)
+            features = np.concatenate([nodes_feats,ne],axis=1)
+    else:
+        features = nodes_feats
+
+
+    # 仍然是原始节点的ID
+
+    train_feats = features[: int((args.train_proportion+args.dev_proportion)*indexes.size(0))]
+    train_labels = labels[:int((args.train_proportion+args.dev_proportion)*indexes.size(0))]
     
-    train_feat = np.concatenate([train,dev],axis=0)
+    test_feats = features[int((args.train_proportion+args.dev_proportion)*indexes.size(0)):]
+    test_labels = labels[int((args.train_proportion+args.dev_proportion)*indexes.size(0)):]
 
-    train_label,dev_label,test_label = dataset.label[train_idx],dataset.label[dev_idx],dataset.label[test_idx]
-
-    train_label = np.concatenate([train_label,dev_label],axis=-1)
     print("loading dataset done, begin to train...")
-    model.fit(train_feat,train_label)
+    model.fit(train_feats,train_labels)
     print("training done,start to eval...")
-    result = model.predict(test)
-    f1,recall,precision = f1_score(result,test_label), recall_score(result,test_label),precision_score(result,test_label)
+    result = model.predict(test_feats)
+    f1,recall,precision = f1_score(result,test_labels), recall_score(result,test_label),precision_score(result,test_label)
     print("eval done.")
 
     print(f"""

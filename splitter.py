@@ -61,9 +61,9 @@ class splitter():
                 perm_idx = indexes[perm_idx]
             else:
                 print ('tasker.data.nodes',indexes.size())
-                perm_idx, _ = indexes.sort()
+                perm_idx, _ = indexes.sort() # 以原始节点的ID按数字大小排序
             #print ('perm_idx',perm_idx[:10])
-            
+            # 仍然是原始节点的ID
             self.train_idx = perm_idx[:int(args.train_proportion*perm_idx.size(0))]
             self.dev_idx = perm_idx[int(args.train_proportion*perm_idx.size(0)): int((args.train_proportion+args.dev_proportion)*perm_idx.size(0))]
             self.test_idx = perm_idx[int((args.train_proportion+args.dev_proportion)*perm_idx.size(0)):]

@@ -37,7 +37,7 @@ class Elliptic_Temporal_Dataset():
 		self.nodes, self.nodes_feats = self.load_node_feats(args.elliptic_args, tar_archive)
 
 	def load_node_feats(self, elliptic_args, tar_archive):
-		data = u.load_data_from_tar(elliptic_args.feats_file, tar_archive, starting_line=0)
+		data = u.load_data_from_tar(elliptic_args.feats_file, tar_archive, starting_line=1)
 		nodes = data
 
 		nodes_feats = nodes[:,1:]
