@@ -90,8 +90,6 @@ def main():
         features = nodes_feats
 
 
-    # 仍然是原始节点的ID
-
     train_feats = features[: int((args.train_proportion+args.dev_proportion)*indexes.size(0))]
     train_labels = labels[:int((args.train_proportion+args.dev_proportion)*indexes.size(0))]
     
@@ -102,7 +100,7 @@ def main():
     model.fit(train_feats,train_labels)
     print("training done,start to eval...")
     result = model.predict(test_feats)
-    f1,recall,precision = f1_score(result,test_labels), recall_score(result,test_label),precision_score(result,test_label)
+    f1,recall,precision = f1_score(result,test_labels), recall_score(result,test_labels),precision_score(result,test_labels)
     print("eval done.")
 
     print(f"""
