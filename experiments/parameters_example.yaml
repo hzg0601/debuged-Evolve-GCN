@@ -89,4 +89,4 @@ comments:
 ml_args:
   model: rf # dt:decisontree, rf:randomforest, mlp, lr:logisticregression
   feature: AF+NE # AF, LF, NE, AF+NE, LF+NE
-  nenenenene: gcn
+  ne: gcn
