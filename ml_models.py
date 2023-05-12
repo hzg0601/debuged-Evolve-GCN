@@ -71,15 +71,15 @@ def main():
     assert args.ml_args["feature"] in ["AF","LF","NE","AF+NE","LF+NE"],"unsupported features"
     
     model = eval(args.ml_args["model"])
-    if "AF" in args.ml_args["features"]:
+    if "AF" in args.ml_args["feature"]:
         nodes_feats = nodes_feats[:,:94]
 
     # 如果使用网络嵌入特征
     if "NE" in args.ml_args["feature"]:
         assert args.ml_args['ne'] in ["egcn_h", "egcn_o", "skipfeatsgcn","gcn", "skipgcn","delgcn"], "unsupported nework embedding features"
         file_re = f"^{args.ml_args['ne']}.*{args.data}\.csv\.gz$"
-        file_name = log_file + [re.search(file_re,file) for file in os.listdir(log_file)][0]
-        ne = pd.read_csv(file_name,header=None, index=None, compression='gzip').to_numpy()[:,1:]
+        file_name = log_file + [file for file in os.listdir(log_file) if re.search(file_re,file)][0]
+        ne = pd.read_csv(file_name,header=None, compression='gzip').to_numpy()[:,1:]
         
         # skipfeatsgcn包含了原始特征
         if  args.ml_args["feature"] == "NE" or args.ml_args['ne'] == "skipfeatsgcn":
@@ -90,11 +90,11 @@ def main():
         features = nodes_feats
 
 
-    train_feats = features[: int((args.train_proportion+args.dev_proportion)*indexes.size(0))]
-    train_labels = labels[:int((args.train_proportion+args.dev_proportion)*indexes.size(0))]
+    train_feats = features[: int((args.train_proportion+args.dev_proportion)*indexes.size)]
+    train_labels = labels[:int((args.train_proportion+args.dev_proportion)*indexes.size)]
     
-    test_feats = features[int((args.train_proportion+args.dev_proportion)*indexes.size(0)):]
-    test_labels = labels[int((args.train_proportion+args.dev_proportion)*indexes.size(0)):]
+    test_feats = features[int((args.train_proportion+args.dev_proportion)*indexes.size):]
+    test_labels = labels[int((args.train_proportion+args.dev_proportion)*indexes.size):]
 
     print("loading dataset done, begin to train...")
     model.fit(train_feats,train_labels)
@@ -104,9 +104,9 @@ def main():
     print("eval done.")
 
     print(f"""
-    the f1,recall, and precision of model:{args.ml_args.model} 
-    under feature: {args.ml_args.feature} and
-     ne: {args.ml_args.ne} 
+    the f1,recall, and precision of model:{args.ml_args['model']} 
+    under feature: {args.ml_args['feature']} and
+     ne: {args.ml_args['ne']} 
     is {f1},{recall},{precision}
     """)
 

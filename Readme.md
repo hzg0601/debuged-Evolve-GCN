@@ -16,6 +16,8 @@ LSTM以模型参数为输入，以模型参数为输出，不再使用节点嵌�
 O版本适用于节点没有有效特征，或结构特征起决定性作用的场景。
 
 **官方实现对H和O版本的实现都是以GRU为基础，并没有按照论文实现**
+
+**本项目于仅就elliptic_temporal数据集及node_cls任务进行了debug**
 =====
 
 This repository contains the code for [EvolveGCN: Evolving Graph Convolutional Networks for Dynamic Graphs](https://arxiv.org/abs/1902.10191), published in AAAI 2020.

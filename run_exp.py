@@ -6,17 +6,17 @@ import time
 import random
 
 #datasets
-import bitcoin_dl as bc
+# import bitcoin_dl as bc
 import elliptic_temporal_dl as ell_temp
-import uc_irv_mess_dl as ucim
-import auto_syst_dl as aus
-import sbm_dl as sbm
-import reddit_dl as rdt
+# import uc_irv_mess_dl as ucim
+# import auto_syst_dl as aus
+# import sbm_dl as sbm
+# import reddit_dl as rdt
 
 
 #taskers
-import link_pred_tasker as lpt
-import edge_cls_tasker as ect
+# import link_pred_tasker as lpt
+# import edge_cls_tasker as ect
 import node_cls_tasker as nct
 
 #models
@@ -103,40 +103,40 @@ def build_dataset(args):
 	if args.data == 'bitcoinotc' or args.data == 'bitcoinalpha':
 		if args.data == 'bitcoinotc':
 			args.bitcoin_args = args.bitcoinotc_args
-		elif args.data == 'bitcoinalpha':
-			args.bitcoin_args = args.bitcoinalpha_args
-		return bc.bitcoin_dataset(args)
+		# elif args.data == 'bitcoinalpha':
+		# 	args.bitcoin_args = args.bitcoinalpha_args
+		# return bc.bitcoin_dataset(args)
 	# elif args.data == 'aml_sim':
 	# 	return aml.Aml_Dataset(args)
 	# elif args.data == 'elliptic':
 	# 	return ell.Elliptic_Dataset(args)
 	elif args.data == 'elliptic_temporal':
 		return ell_temp.Elliptic_Temporal_Dataset(args)
-	elif args.data == 'uc_irv_mess':
-		return ucim.Uc_Irvine_Message_Dataset(args)
+	# elif args.data == 'uc_irv_mess':
+	# 	return ucim.Uc_Irvine_Message_Dataset(args)
 	# elif args.data == 'dbg':
 	# 	return dbg.dbg_dataset(args)
 	# elif args.data == 'colored_graph':
 	# 	return cg.Colored_Graph(args)
-	elif args.data == 'autonomous_syst':
-		return aus.Autonomous_Systems_Dataset(args)
-	elif args.data == 'reddit':
-		return rdt.Reddit_Dataset(args)
-	elif args.data.startswith('sbm'):
-		if args.data == 'sbm20':
-			args.sbm_args = args.sbm20_args
-		elif args.data == 'sbm50':
-			args.sbm_args = args.sbm50_args
-		return sbm.sbm_dataset(args)
+	# elif args.data == 'autonomous_syst':
+	# 	return aus.Autonomous_Systems_Dataset(args)
+	# elif args.data == 'reddit':
+	# 	return rdt.Reddit_Dataset(args)
+	# elif args.data.startswith('sbm'):
+	# 	if args.data == 'sbm20':
+	# 		args.sbm_args = args.sbm20_args
+	# 	elif args.data == 'sbm50':
+	# 		args.sbm_args = args.sbm50_args
+	# 	return sbm.sbm_dataset(args)
 	else:
 		raise NotImplementedError('only arxiv has been implemented')
 
 def build_tasker(args,dataset):
-	if args.task == 'link_pred':
-		return lpt.Link_Pred_Tasker(args,dataset)
-	elif args.task == 'edge_cls':
-		return ect.Edge_Cls_Tasker(args,dataset)
-	elif args.task == 'node_cls':
+	# if args.task == 'link_pred':
+	# 	return lpt.Link_Pred_Tasker(args,dataset)
+	# elif args.task == 'edge_cls':
+	# 	return ect.Edge_Cls_Tasker(args,dataset)
+	if args.task == 'node_cls':
 		return nct.Node_Cls_Tasker(args,dataset)
 	elif args.task == 'static_node_cls':
 		return nct.Static_Node_Cls_Tasker(args,dataset)
