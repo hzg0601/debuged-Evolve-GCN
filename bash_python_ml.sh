@@ -14,5 +14,4 @@ do
     echo the id of current process is: $!
     wait $!
     let i++
-
 done
