@@ -11,9 +11,9 @@ do
         for ne in ${nes[@]};
         do
             echo currently processing model, feature,ne is: $model,${feature},${ne}
-            sed -i "90s/^model:.*$/model: ${model}/g" $file
-            sed -i "91s/^feature:.*$/feature: ${feature}/g" $file
-            sed -i "92s/^ne:.*$/ne: ${ne}/g" $file
+            sed -i "90s/^\smodel: .*$/\tmodel: ${model}/g" $file
+            sed -i "91s/^\sfeature: .*$/\tfeature: ${feature}/g" $file
+            sed -i "92s/^\sne: .*$/\tne: ${ne}/g" $file
             nohup python ml_models.py --config_file $file > "./log/log3_${model}_${feature}_${ne}.log" 2>&1 &
             echo the id of current process is: $!
             wait $!
